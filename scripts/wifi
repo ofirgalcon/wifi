@@ -1,103 +1,270 @@
-#!/bin/bash
+#!/usr/bin/python
 
-# Skip manual check
-if [ "$1" = 'manualcheck' ]; then
-	echo 'Manual check: skipping'
-	exit 0
-fi
+import subprocess
+import os
+import sys
+import json
+import time
 
-# Create cache dir if it does not exist
-DIR=$(dirname $0)
-mkdir -p "$DIR/cache"
-wifi_file="$DIR/cache/wifi.txt"
+sys.path.insert(0, '/usr/local/munki')
 
-hw_check=`networksetup -listallhardwareports | grep -E '(Wi-Fi|AirPort)' -A 1`
-if [[ "$hw_check" != "" ]] ; then
+from munkilib import FoundationPlist
+from Foundation import CFPreferencesCopyAppValue
 
-wifi_data=`/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I`
+def get_wifi_info():
 
-if [[ "${wifi_data}" == *"AirPort: Off"* ]] || [[ "${wifi_data}" == *"AirPort is Off"* ]] ; then
+    try:
+        cmd = ['/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport','-I']
+        proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, unused_error) = proc.communicate()
+        
+        # Check if Mac has WiFi or sharing is active
+        if output == "":
+            # Check if WiFi sharing is active
+            if check_wifi_sharing():
+                return {"state":"sharing"}
+            else:
+                return {"state":"no wifi"}
 
-echo "     agrCtlRSSI: 0" > $wifi_file
-echo "     agrExtRSSI: 0" >> $wifi_file
-echo "    agrCtlNoise: 0" >> $wifi_file
-echo "    agrExtNoise: 0" >> $wifi_file
-echo "          state: off" >> $wifi_file
-echo "        op mode: " >> $wifi_file
-echo "     lastTxRate: 0" >> $wifi_file
-echo "        maxRate: 0" >> $wifi_file
-echo "lastAssocStatus: " >> $wifi_file
-echo "    802.11 auth: " >> $wifi_file
-echo "      link auth: " >> $wifi_file
-echo "          BSSID: " >> $wifi_file
-echo "           SSID: " >> $wifi_file
-echo "            MCS: 0" >> $wifi_file
-echo "        channel: " >> $wifi_file
-date +%s >> $wifi_file
+        info = {}
 
-elif [[ "${wifi_data}" == "" ]] ; then
+        # If it does, process output
+        for item in output.split('\n'):
+            if 'AirPort: Off' in item or 'AirPort is Off' in item:
+                info["state"] = item.replace("AirPort is Off", "off").replace("AirPort: Off", "off").strip()
+                break
+            elif '     agrCtlRSSI: ' in item:
+                info["agrctlrssi"] = item.replace("     agrCtlRSSI: ", "").strip()
+            elif '     agrExtRSSI: ' in item:
+                info["agrextrssi"] = item.replace("     agrExtRSSI: ", "").strip()
+            elif '    agrCtlNoise: ' in item:
+                info["agrctlnoise"] = item.replace("    agrCtlNoise: ", "").strip()
+            elif '    agrExtNoise: ' in item:
+                info["agrextnoise"] = item.replace("    agrExtNoise: ", "").strip()
+            elif '          state: ' in item:
+                info["state"] = item.replace("          state: ", "").strip()
+            elif '        op mode: ' in item:
+                info["op_mode"] = item.replace("        op mode: ", "").strip()
+            elif '     lastTxRate: ' in item:
+                info["lasttxrate"] = item.replace("     lastTxRate: ", "").strip()
+            elif '        maxRate: ' in item:
+                info["maxrate"] = item.replace("        maxRate: ", "").strip()
+            elif 'lastAssocStatus: ' in item:
+                info["lastassocstatus"] = item.replace("lastAssocStatus: ", "").strip()
+            elif '    802.11 auth: ' in item:
+                info["x802_11_auth"] = item.replace("    802.11 auth: ", "").strip()
+            elif '      link auth: ' in item:
+                info["link_auth"] = item.replace("      link auth: ", "").strip()
+            elif '          BSSID: ' in item:
+                info["bssid"] = item.replace("          BSSID: ", "").strip()
+            elif '           SSID: ' in item:
+                info["ssid"] = item.replace("           SSID: ", "").strip()
+            elif '            MCS: ' in item:
+                info["mcs"] = item.replace("            MCS: ", "").strip()
+            elif '        channel: ' in item:
+                info["channel"] = item.replace("        channel: ", "").strip()
+        
+        # Caclulate SNR
+        if "agrctlrssi" in info and "agrctlnoise" in info:
+            info["snr"] = int(info["agrctlrssi"]) - int(info["agrctlnoise"])
+                        
+    except Exception:
+        # On error, set state to unknown
+        info["state"] = "unknown"
 
-# Check if Internet Connection Sharing is turned on
-check_ICS=`/usr/libexec/PlistBuddy /Library/Preferences/SystemConfiguration/com.apple.nat.plist -c 'Print :NAT:SharingDevices:0'`
-if [[ "${check_ICS}" == "en"* ]] ; then
+    return info
+    
+def get_wifi_interface():
 
-echo "     agrCtlRSSI: 0" > $wifi_file
-echo "     agrExtRSSI: 0" >> $wifi_file
-echo "    agrCtlNoise: 0" >> $wifi_file
-echo "    agrExtNoise: 0" >> $wifi_file
-echo "          state: sharing" >> $wifi_file
-echo "        op mode: " >> $wifi_file
-echo "     lastTxRate: 0" >> $wifi_file
-echo "        maxRate: 0" >> $wifi_file
-echo "lastAssocStatus: " >> $wifi_file
-echo "    802.11 auth: " >> $wifi_file
-echo "      link auth: " >> $wifi_file
-echo "          BSSID: " >> $wifi_file
-echo "           SSID: " >> $wifi_file
-echo "            MCS: 0" >> $wifi_file
-echo "        channel: " >> $wifi_file
-date +%s >> $wifi_file
+    try:
+        cmd = ['/usr/sbin/networksetup','-listallhardwareports']
+        proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, unused_error) = proc.communicate()
 
-else
+        for item in output.split('Hardware Port: '):
+            if 'Wi-Fi' in item or 'AirPort' in item:
+                for line in item.split('\n'):
+                    if 'Device: en' in line:
+                        return line.replace("Device: ", "").strip()
 
-echo "     agrCtlRSSI: 0" > $wifi_file
-echo "     agrExtRSSI: 0" >> $wifi_file
-echo "    agrCtlNoise: 0" >> $wifi_file
-echo "    agrExtNoise: 0" >> $wifi_file
-echo "          state: unknown" >> $wifi_file
-echo "        op mode: " >> $wifi_file
-echo "     lastTxRate: 0" >> $wifi_file
-echo "        maxRate: 0" >> $wifi_file
-echo "lastAssocStatus: " >> $wifi_file
-echo "    802.11 auth: " >> $wifi_file
-echo "      link auth: " >> $wifi_file
-echo "          BSSID: " >> $wifi_file
-echo "           SSID: " >> $wifi_file
-echo "            MCS: 0" >> $wifi_file
-echo "        channel: " >> $wifi_file
-date +%s >> $wifi_file
+    except Exception:
+        return ""
+    
+def check_wifi_sharing():
+    
+    try:
+        plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.nat.plist")
+        wifi_interface = get_wifi_interface()
+        
+        if wifi_interface in plist["NAT"]["SharingDevices"]:
+            return True
+        else:
+            return False
+        
+    except Exception:
+        return False
+    
+def get_networks():
+        
+    try:
+        plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
+        
+        if str(plist["KnownNetworks"]) == "{\n}":
+            return {}
+        
+        perferred_oder = list(plist["PreferredOrder"])
+        networks_json = []
 
-fi
+        for item in plist["KnownNetworks"]:
+            wifi_ssid = item
+            for network_entry in str(plist["KnownNetworks"][item]).split("    };"):
+                ssid_entry = {"captive":"","captive_bypass":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
+                for network in network_entry.split('\n'):
+                    if " = " in network:
+                        key = network.split(' = ')[0].strip()
 
-else
-/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I > $wifi_file
-fi
+                        if key == "NetworkWasCaptive":
+                            ssid_entry["network_was_captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "CaptiveBypass":
+                            ssid_entry["captive_bypass"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "Captive":
+                            ssid_entry["captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "Closed":
+                            ssid_entry["closed"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "Disabled":
+                            ssid_entry["disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "LastConnected":
+                            ssid_entry["last_connected"] = string_to_time(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "Passpoint":
+                            ssid_entry["passpoint"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "PersonalHotspot":
+                            ssid_entry["personal_hotspot"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "PossiblyHiddenNetwork":
+                            ssid_entry["possibly_hidden_network"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "RoamingProfileType":
+                            ssid_entry["roaming_profile_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                        elif key == "SPRoaming":
+                            ssid_entry["sp_roaming"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "SecurityType":
+                            ssid_entry["security_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                        elif key == "ShareMode":
+                            ssid_entry["share_mode"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                        elif key == "SystemMode":
+                            ssid_entry["system_mode"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "TemporarilyDisabled":
+                            ssid_entry["temporarily_disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                        elif key == "UserRole":
+                            ssid_entry["user_role"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                        elif key == "SSIDString":
+                            ssid_entry["ssid"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                            # Get the preferred order
+                            try:
+                                inter = 0
+                                for postition in perferred_oder:
+                                    if wifi_ssid in postition:
+                                        ssid_entry["preferred_order"] = inter
+                                        break
+                                    else:
+                                        inter = inter+1
+                            except Exception:
+                                pass
 
-else
-echo "     agrCtlRSSI: 0" > $wifi_file
-echo "     agrExtRSSI: 0" >> $wifi_file
-echo "    agrCtlNoise: 0" >> $wifi_file
-echo "    agrExtNoise: 0" >> $wifi_file
-echo "          state: no wifi" >> $wifi_file
-echo "        op mode: " >> $wifi_file
-echo "     lastTxRate: 0" >> $wifi_file
-echo "        maxRate: 0" >> $wifi_file
-echo "lastAssocStatus: " >> $wifi_file
-echo "    802.11 auth: " >> $wifi_file
-echo "      link auth: " >> $wifi_file
-echo "          BSSID: " >> $wifi_file
-echo "           SSID: " >> $wifi_file
-echo "            MCS: 0" >> $wifi_file
-echo "        channel: " >> $wifi_file
-date +%s >> $wifi_file
-fi
+                        elif key == "ChannelHistory":
+                            # Generate channel history
+                            try:
+                                history = []
+                                for channel in str(plist["KnownNetworks"][item]["ChannelHistory"]).split('    }'):
+                                    channel_history = {}
+                                    for channel_entry in channel.split("\n"):
+                                        if " = " in channel_entry:
+                                            key = str(channel_entry).split(' = ')[0].strip()
+                                            if key == "Channel":
+                                                channel_history["channel"] = channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                                            elif key == "Timestamp":
+                                                channel_history["timestamp"] = string_to_time(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                                    history.append(channel_history)
+                                ssid_entry["channel_history"] = history[:-1]
+                            except Exception:
+                                pass
+
+                        elif key == "BSSIDList":
+                            # Generate BSSID history
+                            try:
+                                bssid_list = []
+                                for bssid in str(plist["KnownNetworks"][item]["BSSIDList"]).split('    }'):
+                                    bssid_history = ""
+                                    for bssid_entry in bssid.split("\n"):
+                                        if " = " in bssid_entry:
+                                            key = str(bssid_entry).replace('"', "").split(' = ')[0].strip()
+                                            if key == "LEAKY_AP_BSSID":
+                                                bssid_history = bssid_history + bssid_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                                    bssid_list.append(bssid_history)
+                                ssid_entry["bssid_list"] = ", ".join(bssid_list[:-1])
+                            except Exception:
+                                pass
+
+                networks_json.append(ssid_entry)
+        return {"known_networks":json.dumps(networks_json)}
+        
+    except Exception:
+        return {"known_networks":""}   
+    
+def string_to_time(date_time):
+    
+    if (date_time == "0" or date_time == 0):
+        return ""
+    else:
+        try:
+            return str(int(time.mktime(time.strptime(str(date_time).replace(" +0000", ""), '%Y-%m-%d %H:%M:%S'))))
+        except Exception:
+            try:
+                return str(int(time.mktime(time.strptime(str(date_time).replace(" +0000", ""), '%Y-%m-%dT%H:%M:%SZ'))))
+            except Exception:
+                return date_time
+
+def to_bool(s):
+    if s == "":
+        return ""
+    elif s == True:
+        return 1
+    else:
+        return 0
+    
+def merge_two_dicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
+    
+def main():
+    """Main"""
+        
+    # Create cache dir if it does not exist
+    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # Skip manual check
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'manualcheck':
+            print 'Manual check: skipping'
+            exit(0)
+            
+    # Set the encoding
+    reload(sys)  
+    sys.setdefaultencoding('utf8')
+
+    # Get results
+    result = dict()
+    result = merge_two_dicts(get_wifi_info(), get_networks())
+    
+    # Write ard results to cache
+    output_plist = os.path.join(cachedir, 'wifi.plist')
+    FoundationPlist.writePlist(result, output_plist)
+#    print FoundationPlist.writePlistToString(result)
+
+if __name__ == "__main__":
+    main()

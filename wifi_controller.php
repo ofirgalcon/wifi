@@ -77,21 +77,28 @@ class Wifi_controller extends Module_controller
         $wifi = new wifi_model;
         $obj->view('json', array('msg' => $wifi->get_wifi_name()));
     }
-
+    
     /**
-     * Get WiFi information for serial_number
-     *
-     * @param string $serial serial number
-     **/
-    public function get_wifi_data($serial_number = '')
+    * Retrieve data in json format
+    *
+    * @return void
+    * @author tuxudo
+    **/
+    public function get_tab_data($serial_number = '')
     {
         $obj = new View();
 
         if (! $this->authorized()) {
             $obj->view('json', array('msg' => 'Not authorized'));
+            return;
         }
-
-        $wifi = new wifi_model($serial_number);
-        $obj->view('json', array('msg' => $wifi->rs));
+        
+        $sql = "SELECT ssid, bssid, state, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, agrctlrssi, agrctlnoise, snr, known_networks
+                        FROM wifi 
+                        WHERE serial_number = '$serial_number'";
+        
+        $queryobj = new Wifi_model();
+        $wifi_tab = $queryobj->query($sql);
+        $obj->view('json', array('msg' => current(array('msg' => $wifi_tab)))); 
     }
-} // END class Wifi_controller
+} // End class Wifi_controller

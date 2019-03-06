@@ -1,13 +1,14 @@
 <?php
+
+use CFPropertyList\CFPropertyList;
+
 class Wifi_model extends \Model
 {
-
     public function __construct($serial = '')
     {
         parent::__construct('id', 'wifi'); //primary key, tablename
         $this->rs['id'] = 0;
         $this->rs['serial_number'] = $serial;
-        $this->rt['serial_number'] = 'VARCHAR(255) UNIQUE';
         $this->rs['agrctlrssi'] = 0;
         $this->rs['agrextrssi'] = 0;
         $this->rs['agrctlnoise'] = 0;
@@ -23,17 +24,8 @@ class Wifi_model extends \Model
         $this->rs['ssid'] = '';
         $this->rs['mcs'] = 0;
         $this->rs['channel'] = '';
-        
-        // Schema version, increment when creating a db migration
-        $this->schema_version = 0;
-
-        // Add indexes
-        $this->idx[] = array('ssid');
-        $this->idx[] = array('bssid');
-        $this->idx[] = array('state');
-
-        // Create table if it does not exist
-       //$this->create_table();
+        $this->rs['snr'] = 0;
+        $this->rs['known_networks'] = "";
         
         if ($serial) {
             $this->retrieve_record($serial);
@@ -87,38 +79,69 @@ class Wifi_model extends \Model
     
     public function process($data)
     {
-        // Translate network strings to db fields
-        $translate = array(
-            '     agrCtlRSSI: ' => 'agrctlrssi',
-            '     agrExtRSSI: ' => 'agrextrssi',
-            '    agrCtlNoise: ' => 'agrctlnoise',
-            '    agrExtNoise: ' => 'agrextnoise',
-            '          state: ' => 'state',
-            '        op mode: ' => 'op_mode',
-            '     lastTxRate: ' => 'lasttxrate',
-            '        maxRate: ' => 'maxrate',
-            'lastAssocStatus: ' => 'lastassocstatus',
-            '    802.11 auth: ' => 'x802_11_auth',
-            '      link auth: ' => 'link_auth',
-            '          BSSID: ' => 'bssid',
-            '           SSID: ' => 'ssid',
-            '            MCS: ' => 'mcs',
-            '        channel: ' => 'channel');
+        // Check if data has been passed to model
+        if (! $data) {
+            throw new Exception("Error Processing Request: No data found", 1);
+        } else if (substr( $data, 0, 30 ) != '<?xml version="1.0" encoding="' ) { // Else if old style text, process with old text based handler
+        
+            // Translate network strings to db fields
+            $translate = array(
+                '     agrCtlRSSI: ' => 'agrctlrssi',
+                '     agrExtRSSI: ' => 'agrextrssi',
+                '    agrCtlNoise: ' => 'agrctlnoise',
+                '    agrExtNoise: ' => 'agrextnoise',
+                '          state: ' => 'state',
+                '        op mode: ' => 'op_mode',
+                '     lastTxRate: ' => 'lasttxrate',
+                '        maxRate: ' => 'maxrate',
+                'lastAssocStatus: ' => 'lastassocstatus',
+                '    802.11 auth: ' => 'x802_11_auth',
+                '      link auth: ' => 'link_auth',
+                '          BSSID: ' => 'bssid',
+                '           SSID: ' => 'ssid',
+                '            MCS: ' => 'mcs',
+                '        channel: ' => 'channel');
 
-        // Delete previous entries
+            // Delete previous entries
 
-        // Parse data
-        foreach (explode("\n", $data) as $line) {
-            // Translate standard entries
-            foreach ($translate as $search => $field) {
-                if (strpos($line, $search) === 0) {
-                    $value = substr($line, strlen($search));
-                    
-                    $this->$field = $value;
-                    break;
+            // Parse data
+            foreach (explode("\n", $data) as $line) {
+                // Translate standard entries
+                foreach ($translate as $search => $field) {
+                    if (strpos($line, $search) === 0) {
+                        $value = substr($line, strlen($search));
+
+                        $this->$field = $value;
+                        break;
+                    }
+                }
+            } //end foreach explode lines
+            $this->save();
+        } else { // Else process with new XML handler
+
+            // Process incoming wifi.plist
+            $parser = new CFPropertyList();
+            $parser->parse($data, CFPropertyList::FORMAT_XML);
+            $plist = $parser->toArray();
+
+            // Process each of the items
+            foreach (array('agrctlrssi', 'agrextrssi', 'agrctlnoise', 'agrextnoise', 'state', 'op_mode', 'lasttxrate', 'lastassocstatus', 'maxrate', 'x802_11_auth', 'link_auth', 'bssid', 'ssid', 'mcs', 'channel', 'snr', 'known_networks') as $item) {
+
+                // If key exists and is zero, set it to zero
+                if ( array_key_exists($item, $plist) && $plist[$item] === 0) {
+                    $this->$item = 0;
+                // Else if key does not exist in $plist, null it
+                } else if (! array_key_exists($item, $plist) || $plist[$item] == '' || $plist[$item] == "{}" || $plist[$item] == "[]") {
+                    $this->$item = null;
+
+                // Set the db fields to be the same as those in the preference file
+                } else {
+                    $this->$item = $plist[$item];
                 }
             }
-        } //end foreach explode lines
-        $this->save();
+
+            // Save the data because bumblebees are fuzzy
+            $this->save();
+        }
     }
 }

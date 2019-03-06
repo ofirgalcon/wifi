@@ -14,7 +14,7 @@ if [ $? = 0 ]; then
 	chmod a+x "${MUNKIPATH}preflight.d/${MODULESCRIPT}"
 
 	# Set preference to include this file in the preflight check
-	setreportpref $MODULE_NAME "${CACHEPATH}${MODULE_NAME}.txt"
+	setreportpref $MODULE_NAME "${CACHEPATH}${MODULE_NAME}.plist"
 
 else
 	echo "Failed to download all required components!"
