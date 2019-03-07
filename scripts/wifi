@@ -130,7 +130,7 @@ def get_networks():
         for item in saved_networks:
             wifi_ssid = item
             for network_entry in str(saved_networks[item]).split("    };"):
-                ssid_entry = {"captive":"","captive_bypass":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
+                ssid_entry = {"captive":"","captive_bypass":"","channel":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
                 
                 for network in network_entry.split('\n'):
                     if " = " in network:
