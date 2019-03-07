@@ -44,6 +44,7 @@
     "unknown": "Unknown",
     "known_networks": "Known Networks",
     "bssid_list": "BSSID List",
+    "never": "Never",
     "captive": "Captive",
     "captive_bypass": "Captive Bypass",
     "disabled": "Disabled",

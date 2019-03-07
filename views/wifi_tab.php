@@ -22,7 +22,6 @@ $(document).on('appReady', function(){
             
             // Hide
             $('#wifi-msg').text('');
-            $('#wifi-count-view').removeClass('hide');
             // Update the tab badge
             $('#wifi-cnt').text(i18n.t('on'));
             
@@ -85,86 +84,91 @@ $(document).on('appReady', function(){
                             .append($('<tbody>')
                                 .append(rows))))
 
-                // Only draw the known networks table if there is something in it
-                if (d["known_networks"]){
-                    $('#wifi-tab')
-                        .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.preferred_order">'+i18n.t('wifi.preferred_order')+'</th><th data-colname="wifi.last_connected">'+i18n.t('wifi.last_connected')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.network_was_captive">'+i18n.t('wifi.network_was_captive')+'</th><th data-colname="wifi.closed">'+i18n.t('wifi.closed')+'</th><th data-colname="wifi.disabled">'+i18n.t('wifi.disabled')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="14" class="dataTables_empty"></td></tr></tbody></table></div>')
-                    
-                    
-                        // Parse the JSON string into vaiable
-                        var table_data = JSON.parse(d["known_networks"]);
-                        var known_networks = true;
-                        $('#wifi_known_networks-table').DataTable({
-
-                            data: table_data,
-                            order: [[0,'asc']],
-                            autoWidth: false,
-                            columns: [
-                                { data: 'ssid' },
-                                { data: 'security_type' },
-                                { data: 'preferred_order' },
-                                { data: 'last_connected' },
-                                { data: 'personal_hotspot' },
-                                { data: 'possibly_hidden_network' },
-                                { data: 'captive' },
-                                { data: 'network_was_captive' },
-                                { data: 'closed' },
-                                { data: 'disabled' },
-                                { data: 'passpoint' },
-                                { data: 'roaming_profile_type' },
-                                { data: 'temporarily_disabled' },
-                                { data: 'bssid_list' }
-                            ],
-                            createdRow: function( nRow, aData, iDataIndex ) {
-                                    // Format date
-                                    var event = parseInt($('td:eq(3)', nRow).html());
-                                    var date = new Date(event * 1000);
-                                    $('td:eq(3)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                                
-                                    var colvar=$('td:eq(4)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(4)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(5)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(5)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(6)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(6)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(7)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(7)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(8)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(8)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(9)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(9)', nRow).html(colvar)
-                                                                
-                                    var colvar=$('td:eq(10)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(10)', nRow).html(colvar)
-                                
-                                    var colvar=$('td:eq(12)', nRow).html();
-                                    colvar = colvar == '1' ? i18n.t('yes') :
-                                    (colvar === '0' ? i18n.t('no') : '')
-                                    $('td:eq(12)', nRow).html(colvar)
-                            }
-                        });
-                }
-
             })
+        } 
+        
+        // Only draw the known networks table if there is something in it
+        if (data[0]["known_networks"]){
+            $('#wifi-tab')
+                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.preferred_order">'+i18n.t('wifi.preferred_order')+'</th><th data-colname="wifi.last_connected">'+i18n.t('wifi.last_connected')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.network_was_captive">'+i18n.t('wifi.network_was_captive')+'</th><th data-colname="wifi.closed">'+i18n.t('wifi.closed')+'</th><th data-colname="wifi.disabled">'+i18n.t('wifi.disabled')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="14" class="dataTables_empty"></td></tr></tbody></table></div>')
+
+
+                // Parse the JSON string into vaiable
+                var table_data = JSON.parse(data[0]["known_networks"]);
+                var known_networks = true;
+                $('#wifi_known_networks-table').DataTable({
+
+                    data: table_data,
+                    order: [[0,'asc']],
+                    autoWidth: false,
+                    columns: [
+                        { data: 'ssid' },
+                        { data: 'security_type' },
+                        { data: 'preferred_order' },
+                        { data: 'last_connected' },
+                        { data: 'channel' },
+                        { data: 'personal_hotspot' },
+                        { data: 'possibly_hidden_network' },
+                        { data: 'captive' },
+                        { data: 'network_was_captive' },
+                        { data: 'closed' },
+                        { data: 'disabled' },
+                        { data: 'passpoint' },
+                        { data: 'roaming_profile_type' },
+                        { data: 'temporarily_disabled' },
+                        { data: 'bssid_list' }
+                    ],
+                    createdRow: function( nRow, aData, iDataIndex ) {
+                            // Format date
+                            var event = parseInt($('td:eq(3)', nRow).html());
+                            if ( !isNaN(event) ){
+                                var date = new Date(event * 1000);
+                                $('td:eq(3)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
+                            } else {
+                                $('td:eq(3)', nRow).html(i18n.t('wifi.never'));
+                            }
+
+                            var colvar=$('td:eq(5)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(5)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(6)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(6)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(7)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(7)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(8)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(8)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(9)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(9)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(10)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(10)', nRow).html(colvar)
+                        
+                            var colvar=$('td:eq(11)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(11)', nRow).html(colvar)
+
+                            var colvar=$('td:eq(13)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(13)', nRow).html(colvar)
+                    }
+                });
         }
     });
 });

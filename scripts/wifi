@@ -113,16 +113,25 @@ def get_networks():
     try:
         plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
         
-        if str(plist["KnownNetworks"]) == "{\n}":
+        # Older versions of macOS store it under a different key
+        if "KnownNetworks" in plist:
+            saved_networks = plist["KnownNetworks"]
+        elif "RememberedNetworks" in plist:
+            saved_networks = plist["RememberedNetworks"]
+        else:
+            return {}
+            
+        if str(saved_networks) == "{\n}":
             return {}
         
         perferred_oder = list(plist["PreferredOrder"])
         networks_json = []
 
-        for item in plist["KnownNetworks"]:
+        for item in saved_networks:
             wifi_ssid = item
-            for network_entry in str(plist["KnownNetworks"][item]).split("    };"):
+            for network_entry in str(saved_networks[item]).split("    };"):
                 ssid_entry = {"captive":"","captive_bypass":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
+                
                 for network in network_entry.split('\n'):
                     if " = " in network:
                         key = network.split(' = ')[0].strip()
@@ -177,7 +186,7 @@ def get_networks():
                             # Generate channel history
                             try:
                                 history = []
-                                for channel in str(plist["KnownNetworks"][item]["ChannelHistory"]).split('    }'):
+                                for channel in str(saved_networks[item]["ChannelHistory"]).split('    }'):
                                     channel_history = {}
                                     for channel_entry in channel.split("\n"):
                                         if " = " in channel_entry:
@@ -186,6 +195,9 @@ def get_networks():
                                                 channel_history["channel"] = channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
                                             elif key == "Timestamp":
                                                 channel_history["timestamp"] = string_to_time(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                                                # Get historical channel by comparing last connected with channel's timestamp
+                                                if network_entry.count(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()) == 2:
+                                                    ssid_entry["channel"] = channel_history["channel"]                                                
                                     history.append(channel_history)
                                 ssid_entry["channel_history"] = history[:-1]
                             except Exception:
@@ -195,7 +207,7 @@ def get_networks():
                             # Generate BSSID history
                             try:
                                 bssid_list = []
-                                for bssid in str(plist["KnownNetworks"][item]["BSSIDList"]).split('    }'):
+                                for bssid in str(saved_networks[item]["BSSIDList"]).split('    }'):
                                     bssid_history = ""
                                     for bssid_entry in bssid.split("\n"):
                                         if " = " in bssid_entry:
@@ -229,7 +241,7 @@ def string_to_time(date_time):
 def to_bool(s):
     if s == "":
         return ""
-    elif s == True:
+    elif s == True or int(s) == 1:
         return 1
     else:
         return 0
