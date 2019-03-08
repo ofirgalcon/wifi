@@ -107,29 +107,41 @@ def check_wifi_sharing():
         
     except Exception:
         return False
-    
+ 
 def get_networks():
-        
+      
     try:
         plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
-        
+
         # Older versions of macOS store it under a different key
         if "KnownNetworks" in plist:
             saved_networks = plist["KnownNetworks"]
         elif "RememberedNetworks" in plist:
             saved_networks = plist["RememberedNetworks"]
+
         else:
             return {}
-            
+
         if str(saved_networks) == "{\n}":
             return {}
-        
-        perferred_oder = list(plist["PreferredOrder"])
+
+        if "PreferredOrder" in plist:
+            perferred_oder = list(plist["PreferredOrder"])
+
         networks_json = []
 
         for item in saved_networks:
-            wifi_ssid = item
-            for network_entry in str(saved_networks[item]).split("    };"):
+
+            # Process RememberedNetworks differently than KnownNetworks
+            if "KnownNetworks" in plist:
+                wifi_ssid = item
+                for_by = saved_networks[item]
+                split_by = "    };"
+            elif "RememberedNetworks" in plist:
+                for_by = item
+                split_by = "emptysplitnystring1234567890"
+
+            for network_entry in str(for_by).split(split_by):
                 ssid_entry = {"captive":"","captive_bypass":"","channel":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
                 
                 for network in network_entry.split('\n'):
@@ -171,16 +183,17 @@ def get_networks():
                         elif key == "SSIDString":
                             ssid_entry["ssid"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
                             # Get the preferred order
-                            try:
-                                inter = 0
-                                for postition in perferred_oder:
-                                    if wifi_ssid in postition:
-                                        ssid_entry["preferred_order"] = inter
-                                        break
-                                    else:
-                                        inter = inter+1
-                            except Exception:
-                                pass
+                            if "PreferredOrder" in plist:
+                                try:
+                                    inter = 0
+                                    for postition in perferred_oder:
+                                        if wifi_ssid in postition:
+                                            ssid_entry["preferred_order"] = inter
+                                            break
+                                        else:
+                                            inter = inter+1
+                                except Exception:
+                                    pass
 
                         elif key == "ChannelHistory":
                             # Generate channel history
