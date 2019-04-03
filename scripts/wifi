@@ -59,14 +59,7 @@ def get_wifi_info():
                 info["link_auth"] = item.replace("      link auth: ", "").strip()
             elif '          BSSID: ' in item:
                 bssid = item.replace("          BSSID: ", "").strip()
-                digits_out = []
-                for digits in bssid.split(':'):
-                    # Append missing zero
-                    if len(digits) == 1:
-                        digits_out.append("0" + str(digits))
-                    else:
-                        digits_out.append(digits)
-                info["bssid"] = ":".join(digits_out)
+                info["bssid"] = format_mac_address(bssid)
             elif '           SSID: ' in item:
                 info["ssid"] = item.replace("           SSID: ", "").strip()
             elif '            MCS: ' in item:
@@ -278,6 +271,10 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
+def format_mac_address(mac_address):
+    mac_format = "{:0>2}:{:0>2}:{:0>2}:{:0>2}:{:0>2}:{:0>2}"
+    return mac_format.format(*tuple(mac_address.split(':')))
     
 def main():
     """Main"""
