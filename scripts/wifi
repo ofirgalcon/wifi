@@ -113,12 +113,9 @@ def get_networks():
       
     try:
         
-        get_known_network_pref_disabled = to_bool(CFPreferencesCopyAppValue('known_networks_disabled', 'org.munkireport.wifi'))
-        if get_known_network_pref_disabled == 1:
-            
-            return {"known_networks":""}
-        else:
-        
+        get_known_network_pref_enabled = to_bool(CFPreferencesCopyAppValue('wifi_known_networks_enabled', 'MunkiReport'))
+        if get_known_network_pref_enabled == 1:
+            print "running"
             plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
 
             # Older versions of macOS store it under a different key
@@ -242,6 +239,9 @@ def get_networks():
 
                     networks_json.append(ssid_entry)
             return {"known_networks":json.dumps(networks_json)}
+
+        else:
+            return {"known_networks":""}
         
     except Exception:
         return {"known_networks":""}   

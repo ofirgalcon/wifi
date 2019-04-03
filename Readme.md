@@ -6,7 +6,7 @@ Provides connected WiFi network information gathered by `/System/Library/Private
 Client Preferences
 ---
 
-It is possible to disable the collection of known networks on clients using the preference domain `org.munkireport.wifi` with boolean key `known_networks_disabled` set to `true`. Alternatively, you can run `sudo defaults write /Library/Preferences/org.munkireport.wifi.plist known_networks_disabled -bool true` on the client.
+It is possible to enable the collection of known networks on clients using the preference domain `MunkiReport` with boolean key `wifi_known_networks_enabled` set to `true`. Alternatively, you can run `sudo defaults write /Library/Preferences/MunkiReport.plist wifi_known_networks_enabled -bool true` on the client.
 
 Remarks
 ---
