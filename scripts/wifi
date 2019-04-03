@@ -58,7 +58,15 @@ def get_wifi_info():
             elif '      link auth: ' in item:
                 info["link_auth"] = item.replace("      link auth: ", "").strip()
             elif '          BSSID: ' in item:
-                info["bssid"] = item.replace("          BSSID: ", "").strip()
+                bssid = item.replace("          BSSID: ", "").strip()
+                digits_out = []
+                for digits in bssid.split(':'):
+                    # Append missing zero
+                    if len(digits) == 1:
+                        digits_out.append("0" + str(digits))
+                    else:
+                        digits_out.append(digits)
+                info["bssid"] = ":".join(digits_out)
             elif '           SSID: ' in item:
                 info["ssid"] = item.replace("           SSID: ", "").strip()
             elif '            MCS: ' in item:
