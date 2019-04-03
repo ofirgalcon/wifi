@@ -3,6 +3,11 @@ WiFi module
 
 Provides connected WiFi network information gathered by `/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I` and various AirPort preferences
 
+Client Preferences
+---
+
+It is possible to disable the collection of known networks on clients using the preference domain `org.munkireport.wifi` with boolean key `known_networks_disabled` set to `true`. Alternatively, you can run `sudo defaults write /Library/Preferences/org.munkireport.wifi.plist known_networks_disabled -bool true` on the client.
+
 Remarks
 ---
 

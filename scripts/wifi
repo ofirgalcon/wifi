@@ -119,129 +119,136 @@ def check_wifi_sharing():
 def get_networks():
       
     try:
-        plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
-
-        # Older versions of macOS store it under a different key
-        if "KnownNetworks" in plist:
-            saved_networks = plist["KnownNetworks"]
-        elif "RememberedNetworks" in plist:
-            saved_networks = plist["RememberedNetworks"]
-
+        
+        get_known_network_pref_disabled = to_bool(CFPreferencesCopyAppValue('known_networks_disabled', 'org.munkireport.wifi'))
+        if get_known_network_pref_disabled == 1:
+            
+            return {"known_networks":""}
         else:
-            return {}
+        
+            plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.airport.preferences.plist")
 
-        if str(saved_networks) == "{\n}":
-            return {}
-
-        if "PreferredOrder" in plist:
-            perferred_oder = list(plist["PreferredOrder"])
-
-        networks_json = []
-
-        for item in saved_networks:
-
-            # Process RememberedNetworks differently than KnownNetworks
+            # Older versions of macOS store it under a different key
             if "KnownNetworks" in plist:
-                wifi_ssid = item
-                for_by = saved_networks[item]
-                split_by = "    };"
+                saved_networks = plist["KnownNetworks"]
             elif "RememberedNetworks" in plist:
-                for_by = item
-                split_by = "emptysplitnystring1234567890"
+                saved_networks = plist["RememberedNetworks"]
 
-            for network_entry in str(for_by).split(split_by):
-                ssid_entry = {"captive":"","captive_bypass":"","channel":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
-                
-                for network in network_entry.split('\n'):
-                    if " = " in network:
-                        key = network.split(' = ')[0].strip()
+            else:
+                return {}
 
-                        if key == "NetworkWasCaptive":
-                            ssid_entry["network_was_captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "CaptiveBypass":
-                            ssid_entry["captive_bypass"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "Captive":
-                            ssid_entry["captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "Closed":
-                            ssid_entry["closed"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "Disabled":
-                            ssid_entry["disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "LastConnected":
-                            ssid_entry["last_connected"] = string_to_time(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "Passpoint":
-                            ssid_entry["passpoint"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "PersonalHotspot":
-                            ssid_entry["personal_hotspot"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "PossiblyHiddenNetwork":
-                            ssid_entry["possibly_hidden_network"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "RoamingProfileType":
-                            ssid_entry["roaming_profile_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                        elif key == "SPRoaming":
-                            ssid_entry["sp_roaming"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "SecurityType":
-                            ssid_entry["security_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                        elif key == "ShareMode":
-                            ssid_entry["share_mode"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                        elif key == "SystemMode":
-                            ssid_entry["system_mode"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "TemporarilyDisabled":
-                            ssid_entry["temporarily_disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                        elif key == "UserRole":
-                            ssid_entry["user_role"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                        elif key == "SSIDString":
-                            ssid_entry["ssid"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                            # Get the preferred order
-                            if "PreferredOrder" in plist:
+            if str(saved_networks) == "{\n}":
+                return {}
+
+            if "PreferredOrder" in plist:
+                perferred_oder = list(plist["PreferredOrder"])
+
+            networks_json = []
+
+            for item in saved_networks:
+
+                # Process RememberedNetworks differently than KnownNetworks
+                if "KnownNetworks" in plist:
+                    wifi_ssid = item
+                    for_by = saved_networks[item]
+                    split_by = "    };"
+                elif "RememberedNetworks" in plist:
+                    for_by = item
+                    split_by = "emptysplitnystring1234567890"
+
+                for network_entry in str(for_by).split(split_by):
+                    ssid_entry = {"captive":"","captive_bypass":"","channel":"","closed":"","disabled":"","last_connected":"","network_was_captive":"","passpoint":"","personal_hotspot":"","possibly_hidden_network":"","roaming_profile_type":"","sp_roaming":"","security_type":"","share_mode":"","system_mode":"","temporarily_disabled":"","user_role":"","ssid":"","channel_history":"","bssid_list":"","preferred_order":""}
+
+                    for network in network_entry.split('\n'):
+                        if " = " in network:
+                            key = network.split(' = ')[0].strip()
+
+                            if key == "NetworkWasCaptive":
+                                ssid_entry["network_was_captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "CaptiveBypass":
+                                ssid_entry["captive_bypass"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "Captive":
+                                ssid_entry["captive"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "Closed":
+                                ssid_entry["closed"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "Disabled":
+                                ssid_entry["disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "LastConnected":
+                                ssid_entry["last_connected"] = string_to_time(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "Passpoint":
+                                ssid_entry["passpoint"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "PersonalHotspot":
+                                ssid_entry["personal_hotspot"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "PossiblyHiddenNetwork":
+                                ssid_entry["possibly_hidden_network"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "RoamingProfileType":
+                                ssid_entry["roaming_profile_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                            elif key == "SPRoaming":
+                                ssid_entry["sp_roaming"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "SecurityType":
+                                ssid_entry["security_type"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                            elif key == "ShareMode":
+                                ssid_entry["share_mode"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                            elif key == "SystemMode":
+                                ssid_entry["system_mode"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "TemporarilyDisabled":
+                                ssid_entry["temporarily_disabled"] = to_bool(network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                            elif key == "UserRole":
+                                ssid_entry["user_role"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                            elif key == "SSIDString":
+                                ssid_entry["ssid"] = network.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                                # Get the preferred order
+                                if "PreferredOrder" in plist:
+                                    try:
+                                        inter = 0
+                                        for postition in perferred_oder:
+                                            if wifi_ssid in postition:
+                                                ssid_entry["preferred_order"] = inter
+                                                break
+                                            else:
+                                                inter = inter+1
+                                    except Exception:
+                                        pass
+
+                            elif key == "ChannelHistory":
+                                # Generate channel history
                                 try:
-                                    inter = 0
-                                    for postition in perferred_oder:
-                                        if wifi_ssid in postition:
-                                            ssid_entry["preferred_order"] = inter
-                                            break
-                                        else:
-                                            inter = inter+1
+                                    history = []
+                                    for channel in str(saved_networks[item]["ChannelHistory"]).split('    }'):
+                                        channel_history = {}
+                                        for channel_entry in channel.split("\n"):
+                                            if " = " in channel_entry:
+                                                key = str(channel_entry).split(' = ')[0].strip()
+                                                if key == "Channel":
+                                                    channel_history["channel"] = channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                                                elif key == "Timestamp":
+                                                    channel_history["timestamp"] = string_to_time(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
+                                                    # Get historical channel by comparing last connected with channel's timestamp
+                                                    if network_entry.count(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()) == 2:
+                                                        ssid_entry["channel"] = channel_history["channel"]                                                
+                                        history.append(channel_history)
+                                    ssid_entry["channel_history"] = history[:-1]
                                 except Exception:
                                     pass
 
-                        elif key == "ChannelHistory":
-                            # Generate channel history
-                            try:
-                                history = []
-                                for channel in str(saved_networks[item]["ChannelHistory"]).split('    }'):
-                                    channel_history = {}
-                                    for channel_entry in channel.split("\n"):
-                                        if " = " in channel_entry:
-                                            key = str(channel_entry).split(' = ')[0].strip()
-                                            if key == "Channel":
-                                                channel_history["channel"] = channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                                            elif key == "Timestamp":
-                                                channel_history["timestamp"] = string_to_time(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip())
-                                                # Get historical channel by comparing last connected with channel's timestamp
-                                                if network_entry.count(channel_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()) == 2:
-                                                    ssid_entry["channel"] = channel_history["channel"]                                                
-                                    history.append(channel_history)
-                                ssid_entry["channel_history"] = history[:-1]
-                            except Exception:
-                                pass
+                            elif key == "BSSIDList":
+                                # Generate BSSID history
+                                try:
+                                    bssid_list = []
+                                    for bssid in str(saved_networks[item]["BSSIDList"]).split('    }'):
+                                        bssid_history = ""
+                                        for bssid_entry in bssid.split("\n"):
+                                            if " = " in bssid_entry:
+                                                key = str(bssid_entry).replace('"', "").split(' = ')[0].strip()
+                                                if key == "LEAKY_AP_BSSID":
+                                                    bssid_history = bssid_history + bssid_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
+                                        bssid_list.append(bssid_history)
+                                    ssid_entry["bssid_list"] = ", ".join(bssid_list[:-1])
+                                except Exception:
+                                    pass
 
-                        elif key == "BSSIDList":
-                            # Generate BSSID history
-                            try:
-                                bssid_list = []
-                                for bssid in str(saved_networks[item]["BSSIDList"]).split('    }'):
-                                    bssid_history = ""
-                                    for bssid_entry in bssid.split("\n"):
-                                        if " = " in bssid_entry:
-                                            key = str(bssid_entry).replace('"', "").split(' = ')[0].strip()
-                                            if key == "LEAKY_AP_BSSID":
-                                                bssid_history = bssid_history + bssid_entry.split(' =')[1].replace('";', "").replace(';', "").replace(' "', "").strip()
-                                    bssid_list.append(bssid_history)
-                                ssid_entry["bssid_list"] = ", ".join(bssid_list[:-1])
-                            except Exception:
-                                pass
-
-                networks_json.append(ssid_entry)
-        return {"known_networks":json.dumps(networks_json)}
+                    networks_json.append(ssid_entry)
+            return {"known_networks":json.dumps(networks_json)}
         
     except Exception:
         return {"known_networks":""}   
@@ -262,7 +269,7 @@ def string_to_time(date_time):
 def to_bool(s):
     if s == "":
         return ""
-    elif s == True or int(s) == 1:
+    elif s != None and (s == True or int(s) == 1):
         return 1
     else:
         return 0
