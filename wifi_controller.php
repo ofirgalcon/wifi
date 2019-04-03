@@ -36,7 +36,7 @@ class Wifi_controller extends Module_controller
             return;
         }
 
-        $wifi = new wifi_model($serial_number);
+        $wifi = new Wifi_model($serial_number);
         $obj->view('json', array('msg' => $wifi->rs));
     }
     
@@ -55,7 +55,7 @@ class Wifi_controller extends Module_controller
             return;
         }
         
-        $wifi = new wifi_model;
+        $wifi = new Wifi_model;
         $obj->view('json', array('msg' =>$wifi->get_wifi_state()));
     }
     
@@ -74,7 +74,7 @@ class Wifi_controller extends Module_controller
             return;
         }
         
-        $wifi = new wifi_model;
+        $wifi = new Wifi_model;
         $obj->view('json', array('msg' => $wifi->get_wifi_name()));
     }
     
