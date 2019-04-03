@@ -28,44 +28,15 @@ def get_wifi_info():
             else:
                 return {"state":"no wifi"}
 
+        if 'AirPort: Off' in output or 'AirPort is Off' in output:
+            return {"state":"off"}
+        
         info = {}
-
-        # If it does, process output
-        for item in output.split('\n'):
-            if 'AirPort: Off' in item or 'AirPort is Off' in item:
-                info["state"] = item.replace("AirPort is Off", "off").replace("AirPort: Off", "off").strip()
-                break
-            elif '     agrCtlRSSI: ' in item:
-                info["agrctlrssi"] = item.replace("     agrCtlRSSI: ", "").strip()
-            elif '     agrExtRSSI: ' in item:
-                info["agrextrssi"] = item.replace("     agrExtRSSI: ", "").strip()
-            elif '    agrCtlNoise: ' in item:
-                info["agrctlnoise"] = item.replace("    agrCtlNoise: ", "").strip()
-            elif '    agrExtNoise: ' in item:
-                info["agrextnoise"] = item.replace("    agrExtNoise: ", "").strip()
-            elif '          state: ' in item:
-                info["state"] = item.replace("          state: ", "").strip()
-            elif '        op mode: ' in item:
-                info["op_mode"] = item.replace("        op mode: ", "").strip()
-            elif '     lastTxRate: ' in item:
-                info["lasttxrate"] = item.replace("     lastTxRate: ", "").strip()
-            elif '        maxRate: ' in item:
-                info["maxrate"] = item.replace("        maxRate: ", "").strip()
-            elif 'lastAssocStatus: ' in item:
-                info["lastassocstatus"] = item.replace("lastAssocStatus: ", "").strip()
-            elif '    802.11 auth: ' in item:
-                info["x802_11_auth"] = item.replace("    802.11 auth: ", "").strip()
-            elif '      link auth: ' in item:
-                info["link_auth"] = item.replace("      link auth: ", "").strip()
-            elif '          BSSID: ' in item:
-                bssid = item.replace("          BSSID: ", "").strip()
-                info["bssid"] = format_mac_address(bssid)
-            elif '           SSID: ' in item:
-                info["ssid"] = item.replace("           SSID: ", "").strip()
-            elif '            MCS: ' in item:
-                info["mcs"] = item.replace("            MCS: ", "").strip()
-            elif '        channel: ' in item:
-                info["channel"] = item.replace("        channel: ", "").strip()
+        for item in re.findall(r'\s*(.+): ([^\n]+)\n', output):
+            key = item[0].lower().replace('.', '_').replace(' ', '_')
+            info[key] = item[1].strip()
+        if info.get('bssid'):
+            info["bssid"] = format_mac_address(info["bssid"])
         
         # Caclulate SNR
         if "agrctlrssi" in info and "agrctlnoise" in info:
