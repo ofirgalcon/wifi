@@ -41,7 +41,8 @@ def get_wifi_info():
         info[key] = item[1].strip()
     if info.get('bssid'):
         info["bssid"] = format_mac_address(info["bssid"])
-    
+    info["x802_11_auth"] = info["802_11_auth"]
+
     # Caclulate SNR
     if "agrctlrssi" in info and "agrctlnoise" in info:
         info["snr"] = int(info["agrctlrssi"]) - int(info["agrctlnoise"])
