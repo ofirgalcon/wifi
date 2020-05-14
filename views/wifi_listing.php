@@ -1,13 +1,9 @@
 <?php $this->view('partials/head'); ?>
 
 <div class="container">
-
   <div class="row">
-
   	<div class="col-lg-12">
-
 		  <h3><span data-i18n="wifi.report"></span> <span id="total-count" class='label label-primary'>…</span></h3>
-
 		  <table class="table table-striped table-condensed table-bordered">
 		    <thead>
 		      <tr>
@@ -15,16 +11,16 @@
 		      	<th data-i18n="serial" data-colname='reportdata.serial_number'></th>
 		      	<th data-colname='wifi.ssid'>SSID</th>
 		      	<th data-colname='wifi.bssid'>BSSID</th>
-		      	<th data-i18n="wifi.listing.state" data-colname='wifi.state'></th>
-		      	<th data-i18n="wifi.listing.lasttx" data-colname='wifi.lasttxrate'></th>
-		      	<th data-i18n="wifi.listing.maxtx" data-colname='wifi.maxrate'></th>
-		      	<th data-i18n="wifi.listing.channel" data-colname='wifi.channel'></th>
-		      	<th data-colname='wifi.id'>SNR</th>
+		      	<th data-i18n="wifi.state" data-colname='wifi.state'></th>
+		      	<th data-i18n="wifi.lasttxrate_short" data-colname='wifi.lasttxrate'></th>
+		      	<th data-i18n="wifi.maxrate_short" data-colname='wifi.maxrate'></th>
+		      	<th data-i18n="wifi.channel" data-colname='wifi.channel'></th>
+		      	<th data-colname='wifi.snr'>SNR</th>
 		      	<th data-colname='wifi.agrctlrssi'>RSSI</th>
-		      	<th data-i18n="wifi.listing.noise" data-colname='wifi.agrctlnoise'></th>
-		      	<th data-i18n="wifi.listing.authtype" data-colname='wifi.x802_11_auth'></th>
-		      	<th data-i18n="wifi.listing.linkauthtype" data-colname='wifi.link_auth'></th>
-		      	<th data-i18n="wifi.listing.apmode" data-colname='wifi.op_mode'></th>
+		      	<th data-i18n="wifi.agrctlnoise_short" data-colname='wifi.agrctlnoise'></th>
+		      	<th data-i18n="wifi.x802_11_auth_short" data-colname='wifi.x802_11_auth'></th>
+		      	<th data-i18n="wifi.link_auth" data-colname='wifi.link_auth'></th>
+		      	<th data-i18n="wifi.op_mode" data-colname='wifi.op_mode'></th>
 		      	<th data-colname='wifi.mcs'>MCS</th>
 		      </tr>
 		    </thead>
@@ -60,7 +56,10 @@
 	        columnDefs: columnDefs,
 	        ajax: {
                 url: appUrl + '/datatables/data',
-                type: "POST"
+                type: "POST",
+                data: function(d){
+                     d.mrColNotEmpty = "state";
+                }
             },
             dom: mr.dt.buttonDom,
             buttons: mr.dt.buttons,
@@ -81,9 +80,14 @@
 	        	$('td:eq(6)', nRow).html('<span title="'+(maxTx*0.125)+' MB/sec">'+maxTx+" Mbps</span>");
                 
 	        	// Calculate signal to noise ratio
+	        	var snr=$('td:eq(8)', nRow).html();
 	        	var rssi=$('td:eq(9)', nRow).html();
 	        	var noise=$('td:eq(10)', nRow).html();
-	        	$('td:eq(8)', nRow).html('<span title="'+i18n.t('wifi.snr_detail')+'">'+(rssi-noise)+' db</span>');
+                if (snr !== ""){
+                    $('td:eq(8)', nRow).html('<span title="'+i18n.t('wifi.snr_detail')+'">'+snr+' db</span>');
+                } else if (rssi !== "" && noise !== ""){
+                    $('td:eq(8)', nRow).html('<span title="'+i18n.t('wifi.snr_detail')+'">'+(rssi-noise)+' db</span>');
+                }
                                 
 	        	// Format RSSI
 	        	var rssi=$('td:eq(9)', nRow).html();
@@ -95,8 +99,7 @@
                 
 	        	// Format 802.1x mode
 	        	var eightmode=$('td:eq(11)', nRow).html();
-	        	eightmode = eightmode == 'open' ? i18n.t('wifi.open') :
-	        		(eightmode)
+	        	eightmode = eightmode == 'open' ? i18n.t('wifi.open') : (eightmode)
 	        	$('td:eq(11)', nRow).html(eightmode)
                 
 	        	// Format Link Auth
@@ -107,20 +110,21 @@
 	        	linkauth = linkauth == 'wps' ? i18n.t('wifi.wps') :
 	        	linkauth = linkauth == 'wep' ? i18n.t('wifi.wep') :
 	        	linkauth = linkauth == 'wpa' ? i18n.t('wifi.wpa') :
-	        	linkauth = linkauth == 'wpa-psk' ? i18n.t('wifi.wpa_psk') :
-	        	linkauth = linkauth == 'wpa2-psk' ? i18n.t('wifi.wpa2_psk') :
+	        	linkauth = linkauth == 'wpa-psk' ? i18n.t('wifi.wpa-psk') :
+	        	linkauth = linkauth == 'wpa2-psk' ? i18n.t('wifi.wpa2-psk') :
 	        	(linkauth === 'wpa2' ? i18n.t('wifi.wpa2') : linkauth)
 	        	$('td:eq(12)', nRow).html(linkauth)
                 
 	        	// Format AP Mode
 	        	var apmode=$('td:eq(13)', nRow).html();
-	        	apmode = apmode == 'station ' ? i18n.t('wifi.station') :
-	        		(apmode)
+                apmode = apmode == 'station' ? i18n.t('wifi.station') :
+	        	apmode = apmode == 'station ' ? i18n.t('wifi.station') : (apmode)
 	        	$('td:eq(13)', nRow).html(apmode)
                                 
 	        	// Blank row if no wifi
 	        	var wifistate=$('td:eq(4)', nRow).html();
-	        	if ( wifistate == 'no wifi' || wifistate == 'off') {
+	        	if ( wifistate == 'no wifi' || wifistate == 'off' || wifistate == 'init') {
+	        	    $('td:eq(3)', nRow).html("")
 	        	    $('td:eq(5)', nRow).html("")
 	        	    $('td:eq(6)', nRow).html("")
 	        	    $('td:eq(7)', nRow).html("")
