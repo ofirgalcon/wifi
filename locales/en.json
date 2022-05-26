@@ -33,6 +33,7 @@
     "wpa-psk": "WPA-PSK",
     "wpa2-psk": "WPA2-PSK",
     "wpa2": "WPA2",
+    "wpa3-sae": "WPA3-SAE",
     "running": "Connected",
     "off": "Off",
     "snr": "Signal to Noise Ratio",
