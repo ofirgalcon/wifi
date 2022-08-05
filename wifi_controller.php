@@ -24,58 +24,81 @@ class Wifi_controller extends Module_controller
     }
 
     /**
-     * Retrieve data in json format
-     *
-     **/
-    public function get_data($serial_number = '')
-    {
-        $obj = new View();
-
-        if (! $this->authorized()) {
-            $obj->view('json', array('msg' => 'Not authorized'));
-            return;
-        }
-
-        $wifi = new Wifi_model($serial_number);
-        $obj->view('json', array('msg' => $wifi->rs));
-    }
-    
-    /**
      * Get WiFi information for state widget
      *
      * @return void
-     * @author John Eberle (tuxudo)
+     * @author tuxudo
      **/
     public function get_wifi_state()
     {
-        $obj = new View();
+       $sql = "SELECT COUNT(CASE WHEN state = 'running' THEN 1 END) AS connected,
+                COUNT(CASE WHEN state = 'init' THEN 1 END) AS on_not_connected,
+                COUNT(CASE WHEN state = 'sharing' THEN 1 END) AS sharing,
+                COUNT(CASE WHEN state = 'unknown' THEN 1 END) AS unknown,
+                COUNT(CASE WHEN state = 'off' THEN 1 END) AS off
+                FROM wifi
+                LEFT JOIN reportdata USING(serial_number)
+                ".get_machine_group_filter();
 
-        if (! $this->authorized()) {
-            $obj->view('json', array('msg' => array('error' => 'Not authenticated')));
-            return;
+        $out = [];
+        $queryobj = new Wifi_model();
+        foreach($queryobj->query($sql)[0] as $label => $value){
+                $out[] = ['label' => $label, 'count' => $value];
         }
-        
-        $wifi = new Wifi_model;
-        $obj->view('json', array('msg' =>$wifi->get_wifi_state()));
+
+        jsonView($out);
     }
-    
+
     /**
-     * Get WiFi information for SSID widget
+     * Get WiFi information for security widget
      *
      * @return void
-     * @author John Eberle (tuxudo)
+     * @author tuxudo
      **/
-    public function get_wifi_name()
+    public function get_wifi_security()
     {
-        $obj = new View();
+       $sql = "SELECT COUNT(CASE WHEN link_auth LIKE '%none%' THEN 1 END) AS none,
+                COUNT(CASE WHEN link_auth LIKE '%802.1x%' THEN 1 END) AS x8021,
+                COUNT(CASE WHEN link_auth LIKE '%leap%' THEN 1 END) AS leap,
+                COUNT(CASE WHEN link_auth LIKE '%wps%' THEN 1 END) AS wps,
+                COUNT(CASE WHEN link_auth LIKE '%wep%' THEN 1 END) AS wep,
+                COUNT(CASE WHEN link_auth LIKE '%wpa-psk%' THEN 1 END) AS wpa,
+                COUNT(CASE WHEN link_auth LIKE '%wpa2-psk%' THEN 1 END) AS wpa2,
+                COUNT(CASE WHEN link_auth LIKE '%wpa3-sae%' THEN 1 END) AS wpa3
+                FROM wifi
+                LEFT JOIN reportdata USING(serial_number)
+                ".get_machine_group_filter();
 
-        if (! $this->authorized()) {
-            $obj->view('json', array('msg' => array('error' => 'Not authenticated')));
-            return;
+        $out = [];
+        $queryobj = new Wifi_model();
+        foreach($queryobj->query($sql)[0] as $label => $value){
+                $out[] = ['label' => $label, 'count' => $value];
         }
-        
-        $wifi = new Wifi_model;
-        $obj->view('json', array('msg' => $wifi->get_wifi_name()));
+
+        jsonView($out);
+    }
+
+    /**
+     * Get data for scroll widget
+     *
+     * @return void
+     * @author tuxudo
+     **/
+    public function get_scroll_widget($column)
+    {
+        // Remove non-column name characters
+        $column = preg_replace("/[^A-Za-z0-9_\-]]/", '', $column);
+
+        $sql = "SELECT COUNT(CASE WHEN ".$column." <> '' AND ".$column." IS NOT NULL THEN 1 END) AS count, ".$column." 
+                FROM wifi
+                LEFT JOIN reportdata USING (serial_number)
+                ".get_machine_group_filter()."
+                AND ".$column." <> '' AND ".$column." IS NOT NULL 
+                GROUP BY ".$column."
+                ORDER BY count DESC";
+
+        $queryobj = new Wifi_model;
+        jsonView($queryobj->query($sql));
     }
     
     /**
@@ -86,17 +109,14 @@ class Wifi_controller extends Module_controller
     **/
     public function get_tab_data($serial_number = '')
     {
-        $obj = new View();
+        // Remove non-serial number characters
+        $serial_number = preg_replace("/[^A-Za-z0-9_\-]]/", '', $serial_number);
 
-        if (! $this->authorized()) {
-            $obj->view('json', array('msg' => 'Not authorized'));
-            return;
-        }
-        
         $sql = "SELECT ssid, bssid, state, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, agrctlrssi, agrctlnoise, snr, known_networks
                         FROM wifi 
                         WHERE serial_number = '$serial_number'";
-        
+
+        $obj = new View();
         $queryobj = new Wifi_model();
         $wifi_tab = $queryobj->query($sql);
         $obj->view('json', array('msg' => current(array('msg' => $wifi_tab)))); 

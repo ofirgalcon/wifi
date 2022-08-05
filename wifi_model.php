@@ -33,50 +33,8 @@ class Wifi_model extends \Model
         
         $this->serial = $serial;
     }
-
     
-    /**
-     * Get WiFi state for widget
-     *
-     **/
-    public function get_wifi_state()
-    {
-        $sql = "SELECT COUNT(CASE WHEN state = 'running' THEN 1 END) AS connected,
-				COUNT(CASE WHEN state = 'init' THEN 1 END) AS on_not_connected,
-				COUNT(CASE WHEN state = 'sharing' THEN 1 END) AS sharing,
-				COUNT(CASE WHEN state = 'unknown' THEN 1 END) AS unknown,
-				COUNT(CASE WHEN state = 'off' THEN 1 END) AS off
-				FROM wifi
-				LEFT JOIN reportdata USING(serial_number)
-				".get_machine_group_filter();
-        return current($this->query($sql));
-    }
-    
-    /**
-     * Get WiFi names for widget
-     *
-     **/
-    public function get_wifi_name()
-    {
-        $out = array();
-        $sql = "SELECT COUNT(CASE WHEN ssid <> '' AND ssid IS NOT NULL THEN 1 END) AS count, ssid 
-                FROM wifi
-                LEFT JOIN reportdata USING (serial_number)
-                ".get_machine_group_filter()."
-                GROUP BY ssid
-                ORDER BY count DESC";
-        
-        foreach ($this->query($sql) as $obj) {
-            if ("$obj->count" !== "0") {
-                $obj->ssid = $obj->ssid ? $obj->ssid : 'Unknown';
-                $out[] = $obj;
-            }
-        }
-        
-        return $out;
-    }
-    
-    
+    // Process incoming data
     public function process($data)
     {
         // Check if data has been passed to model
@@ -102,8 +60,6 @@ class Wifi_model extends \Model
                 '            MCS: ' => 'mcs',
                 '        channel: ' => 'channel');
 
-            // Delete previous entries
-
             // Parse data
             foreach (explode("\n", $data) as $line) {
                 // Translate standard entries
@@ -115,7 +71,7 @@ class Wifi_model extends \Model
                         break;
                     }
                 }
-            } //end foreach explode lines
+            } // end foreach explode lines
             $this->save();
         } else { // Else process with new XML handler
 
