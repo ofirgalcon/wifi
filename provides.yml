@@ -1,0 +1,20 @@
+client_tabs:
+    wifi-tab:
+        view: wifi_tab
+        i18n: wifi.wifi
+        badge: wifi-cnt
+listings:
+    wifi:
+        view: wifi_listing
+        i18n: wifi.wifi
+reports:
+    wifi_report:
+        view: wifi_report
+        i18n: wifi.report
+widgets:
+    wifi_networks:
+        view: wifi_networks_widget
+    wifi_security:
+        view: wifi_security_widget
+    wifi_state:
+        view: wifi_state_widget

@@ -248,18 +248,7 @@ def collect_known_networks_enabled():
 
 def main():
     """Main"""
-        
-    # Create cache dir if it does not exist
-    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
-    if not os.path.exists(cachedir):
-        os.makedirs(cachedir)
 
-    # Skip manual check
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'manualcheck':
-            print 'Manual check: skipping'
-            exit(0)
-            
     # Set the encoding
     reload(sys)  
     sys.setdefaultencoding('utf8')
@@ -274,6 +263,7 @@ def main():
     result = merge_two_dicts(get_wifi_info(), known_networks)
     
     # Write ard results to cache
+    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
     output_plist = os.path.join(cachedir, 'wifi.plist')
     FoundationPlist.writePlist(result, output_plist)
 

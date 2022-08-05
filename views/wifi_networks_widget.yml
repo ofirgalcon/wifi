@@ -1,0 +1,9 @@
+type: scrollbox
+widget_id: wifi-networks-widget
+api_url: /module/wifi/get_scroll_widget/ssid
+i18n_title: wifi.networks
+icon: fa-laptop
+listing_link: /show/listing/wifi/wifi
+search_key: ssid
+badge: count
+i18n_empty_result: wifi.nonetworks

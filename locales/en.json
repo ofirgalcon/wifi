@@ -6,6 +6,7 @@
     "lasttxrate": "Last Transmit Rate",
     "maxrate": "Maximum Transmit Rate",
     "networks": "WiFi Networks",
+    "security_encryption": "WiFi Security Encryption",
     "agrctlnoise": "Noise Level",
     "agrctlnoise_short": "Noise",
     "nonetworks": "No Networks",
