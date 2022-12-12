@@ -1,0 +1,34 @@
+type: button
+widget_id: wifi-state-widget
+api_url: /module/wifi/get_wifi_state
+i18n_title: wifi.state
+icon: fa-wifi
+listing_link: /show/listing/wifi/wifi
+i18n_empty_result: no-data
+buttons:
+  - label: unknown
+    i18n_label: unknown
+    class: btn-info 
+    search_component: unknown
+    hide_when_zero: true
+  - label: off
+    i18n_label: off
+    class: btn-danger 
+    search_component: off
+    hide_when_zero: true
+  - label: on_not_connected
+    i18n_label: on
+    class: btn-warning 
+    search_component: init
+    hide_when_zero: true
+  - label: connected
+    i18n_label: connected
+    class: btn-success
+    search_component: running
+    hide_when_zero: true
+  - label: sharing
+    i18n_label: wifi.sharing
+    class: btn-info
+    search_component: sharing
+    hide_when_zero: true
+    

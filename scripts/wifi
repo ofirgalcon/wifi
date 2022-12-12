@@ -248,7 +248,7 @@ def collect_known_networks_enabled():
 
 def main():
     """Main"""
-        
+    
     # Get results
     if collect_known_networks_enabled():
         known_networks = get_networks()

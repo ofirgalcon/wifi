@@ -1,0 +1,49 @@
+type: button
+widget_id: wifi-security-widget
+api_url: /module/wifi/get_wifi_security
+i18n_title: wifi.security_encryption
+icon: fa-lock
+listing_link: /show/listing/wifi/wifi
+i18n_empty_result: no-data
+buttons:
+  - label: none
+    i18n_label: wifi.open
+    class: btn-danger 
+    search_component: open
+    hide_when_zero: true
+  - label: wep
+    i18n_label: wifi.wep
+    class: btn-danger 
+    search_component: wep
+    hide_when_zero: true
+  - label: wpa
+    i18n_label: wifi.wpa-psk
+    class: btn-danger 
+    search_component: wpa-psk
+    hide_when_zero: true
+  - label: wpa2
+    i18n_label: wifi.wpa2-psk
+    class: btn-warning 
+    search_component: wpa2-psk
+    hide_when_zero: true
+  - label: wpa3
+    i18n_label: wifi.wpa3-sae
+    class: btn-success
+    search_component: wpa3-sae
+    hide_when_zero: true
+  - label: x8021
+    i18n_label: wifi.802.1x
+    class: btn-info
+    search_component: 802.1x
+    hide_when_zero: true
+  - label: leap
+    i18n_label: wifi.leap
+    class: btn-info
+    search_component: leap
+    hide_when_zero: true
+  - label: wps
+    i18n_label: wifi.wps
+    class: btn-info
+    search_component: wps
+    hide_when_zero: true
+    
