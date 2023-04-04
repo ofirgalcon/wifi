@@ -7,7 +7,7 @@ class Wifi_model extends \Model
     public function __construct($serial = '')
     {
         parent::__construct('id', 'wifi'); //primary key, tablename
-        $this->rs['id'] = 0;
+        $this->rs['id'] = "";
         $this->rs['serial_number'] = $serial;
         $this->rs['agrctlrssi'] = 0;
         $this->rs['agrextrssi'] = 0;
