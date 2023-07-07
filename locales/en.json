@@ -64,5 +64,11 @@
     "snr_detail": "Signal to Noise Ratio - 0db to 120db - higher is better",
     "noise_detail": "0db to -120db - closer to 0 is better",
     "rssi_detail": "Received Signal Strength Indicator - 0db to -120db - closer to 0 is better",
-    "report": "WiFi Report"
+    "report": "WiFi Report",
+    "last_connected_system": "Last Joined by System",
+    "last_connected_user": "Last Joined by User",
+    "last_discovered_at": "Last Discovered At",
+    "autojoin_disabled": "Auto Join Disabled",
+    "add_reason": "Add Method",
+    "standalone_6g": "Standalone 6G"
 }
