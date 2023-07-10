@@ -87,8 +87,8 @@ $(document).on('appReady', function(){
             })
         }
 
-        // Only draw the known networks table if there is something in it
-        if (data[0]["known_networks"]){
+        // Only draw the known networks table if there is something in it and contains a new macOS 11+ key
+        if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "')){
             $('#wifi-tab')
                 .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="14" class="dataTables_empty"></td></tr></tbody></table></div>')
 
