@@ -1,12 +1,12 @@
 WiFi module
 ==============
 
-Provides connected WiFi network information gathered by `/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I` and various AirPort preferences
+Provides connected WiFi network information gathered by `/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I` and various WiFi preferences
 
 Client Preferences
 ---
 
-It is possible to enable the collection of known networks on clients using the preference domain `MunkiReport` with boolean key `wifi_known_networks_enabled` set to `true`. Alternatively, you can run `sudo defaults write /Library/Preferences/MunkiReport.plist wifi_known_networks_enabled -bool true` on the client.
+It is possible to enable the collection of known networks on clients using the preference domain `MunkiReport` with boolean key `wifi_known_networks_enabled` set to `true`. Alternatively, you can run `sudo defaults write /Library/Preferences/MunkiReport.plist wifi_known_networks_enabled -bool true` on the client. Collection of this data is only supported on macOS 11 and newer.
 
 Remarks
 ---
