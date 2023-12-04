@@ -6,7 +6,7 @@ class Wifi_model extends \Model
 {
     public function __construct($serial = '')
     {
-        parent::__construct('id', 'wifi'); //primary key, tablename
+        parent::__construct('id', 'wifi'); // Primary key, tablename
         $this->rs['id'] = "";
         $this->rs['serial_number'] = $serial;
         $this->rs['agrctlrssi'] = 0;
@@ -26,14 +26,16 @@ class Wifi_model extends \Model
         $this->rs['channel'] = '';
         $this->rs['snr'] = 0;
         $this->rs['known_networks'] = "";
-        
+        $this->rs['phy_mode'] = null;
+        $this->rs['country_code'] = null;
+
         if ($serial) {
             $this->retrieve_record($serial);
         }
-        
+
         $this->serial = $serial;
     }
-    
+
     // Process incoming data
     public function process($data)
     {
@@ -41,7 +43,7 @@ class Wifi_model extends \Model
         if (! $data) {
             throw new Exception("Error Processing Request: No data found", 1);
         } else if (substr( $data, 0, 30 ) != '<?xml version="1.0" encoding="' ) { // Else if old style text, process with old text based handler
-        
+
             // Translate network strings to db fields
             $translate = array(
                 '     agrCtlRSSI: ' => 'agrctlrssi',
@@ -81,7 +83,7 @@ class Wifi_model extends \Model
             $plist = $parser->toArray();
 
             // Process each of the items
-            foreach (array('agrctlrssi', 'agrextrssi', 'agrctlnoise', 'agrextnoise', 'state', 'op_mode', 'lasttxrate', 'lastassocstatus', 'maxrate', 'x802_11_auth', 'link_auth', 'bssid', 'ssid', 'mcs', 'channel', 'snr', 'known_networks') as $item) {
+            foreach (array('agrctlrssi', 'agrextrssi', 'agrctlnoise', 'agrextnoise', 'state', 'op_mode', 'lasttxrate', 'lastassocstatus', 'maxrate', 'x802_11_auth', 'link_auth', 'bssid', 'ssid', 'mcs', 'channel', 'snr', 'known_networks', 'phy_mode', 'country_code') as $item) {
 
                 // If key exists and is zero, set it to zero
                 if ( array_key_exists($item, $plist) && $plist[$item] === 0) {

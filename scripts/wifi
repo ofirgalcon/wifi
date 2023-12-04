@@ -38,7 +38,7 @@ def get_wifi_info():
 
     if 'AirPort: Off' in output or 'AirPort is Off' in output:
         return {"state":"off"}
-    
+
     info = {}
     for item in re.findall(r'\s*(.+): ([^\n]+)\n', output):
         key = item[0].lower().replace('.', '_').replace(' ', '_')
@@ -50,6 +50,29 @@ def get_wifi_info():
     # Caclulate SNR
     if "agrctlrssi" in info and "agrctlnoise" in info:
         info["snr"] = int(info["agrctlrssi"]) - int(info["agrctlnoise"])
+
+    return info
+
+def get_additional_wifi_info():
+
+    info = {}
+
+    try:
+        cmd = ['/usr/libexec/airportd', 'info']
+        proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, unused_error) = proc.communicate()
+        output = output.decode("utf-8", errors="ignore")
+
+        for line in output.split('\n'):
+            if "Active PHY: " in line:
+                info['phy_mode'] = line.replace("Active PHY: ","").strip()
+            elif "Country Code: " in line:
+                info['country_code'] = line.replace("Country Code: ","").strip()
+
+    except Exception:
+        pass
 
     return info
 
@@ -72,16 +95,16 @@ def get_wifi_interface():
         return ""
 
 def check_wifi_sharing():
-    
+
     try:
         plist = FoundationPlist.readPlist("/Library/Preferences/SystemConfiguration/com.apple.nat.plist")
         wifi_interface = get_wifi_interface()
-        
+
         if wifi_interface in plist["NAT"]["SharingDevices"]:
             return True
         else:
             return False
-        
+
     except Exception:
         return False
 
@@ -356,7 +379,7 @@ def to_bool(s):
         return 1
     else:
         return 0
-    
+
 def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
@@ -376,7 +399,7 @@ def collect_known_networks_enabled():
 
 def main():
     """Main"""
-    
+
     # Don't process known networks if less than macOS 11 (Darwin 20), we don't support doing that anymore
     if collect_known_networks_enabled() and getDarwinVersion() > 19:
         known_networks = get_networks()
@@ -385,7 +408,11 @@ def main():
 
     result = dict()
     result = merge_two_dicts(get_wifi_info(), known_networks)
-    
+
+    # Get additional WiFi info only if WiFi is active and connected
+    if result["state"] == "running":
+        result = merge_two_dicts(get_additional_wifi_info(), result)
+
     # Write ard results to cache
     cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
     output_plist = os.path.join(cachedir, 'wifi.plist')

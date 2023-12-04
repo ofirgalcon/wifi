@@ -18,15 +18,17 @@
                   <th data-colname='wifi.snr'>SNR</th>
                   <th data-colname='wifi.agrctlrssi'>RSSI</th>
                   <th data-i18n="wifi.agrctlnoise_short" data-colname='wifi.agrctlnoise'></th>
-                  <th data-i18n="wifi.x802_11_auth_short" data-colname='wifi.x802_11_auth'></th>
+                  <th data-i18n="wifi.phy_mode" data-colname='wifi.phy_mode'></th>
                   <th data-i18n="wifi.link_auth" data-colname='wifi.link_auth'></th>
                   <th data-i18n="wifi.op_mode" data-colname='wifi.op_mode'></th>
+                  <th data-colname='wifi.country_code' data-colname='wifi.country_code'></th>
                   <th data-colname='wifi.mcs'>MCS</th>
+                  <th data-i18n="wifi.x802_11_auth_short" data-colname='wifi.x802_11_auth'></th>
               </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td data-i18n="listing.loading" colspan="15" class="dataTables_empty"></td>
+                    <td data-i18n="listing.loading" colspan="17" class="dataTables_empty"></td>
                 </tr>
             </tbody>
           </table>
@@ -70,15 +72,15 @@
                 var sn=$('td:eq(1)', nRow).html();
                 var link = mr.getClientDetailLink(name, sn, '#tab_wifi-tab');
                 $('td:eq(0)', nRow).html(link);
-                
+
                 // Format Last Tx
                 var lastTx=$('td:eq(5)', nRow).html();
                 $('td:eq(5)', nRow).html('<span title="'+(lastTx*0.125)+' MB/sec">'+lastTx+" Mbps</span>");
-                
+
                 // Format Max Tx
                 var maxTx=$('td:eq(6)', nRow).html();
                 $('td:eq(6)', nRow).html('<span title="'+(maxTx*0.125)+' MB/sec">'+maxTx+" Mbps</span>");
-                
+
                 // Calculate signal to noise ratio
                 var snr=$('td:eq(8)', nRow).html();
                 var rssi=$('td:eq(9)', nRow).html();
@@ -88,20 +90,15 @@
                 } else if (rssi !== "" && noise !== ""){
                     $('td:eq(8)', nRow).html('<span title="'+i18n.t('wifi.snr_detail')+'">'+(rssi-noise)+' db</span>');
                 }
-                                
+
                 // Format RSSI
                 var rssi=$('td:eq(9)', nRow).html();
                 $('td:eq(9)', nRow).html('<span title="'+i18n.t('wifi.rssi_detail')+'">'+rssi+' db</span>');
-                                
+
                 // Format Noise
                 var noise=$('td:eq(10)', nRow).html();
                 $('td:eq(10)', nRow).html('<span title="'+i18n.t('wifi.noise_detail')+'">'+noise+' db</span>');
-                
-                // Format 802.1x mode
-                var eightmode=$('td:eq(11)', nRow).html();
-                eightmode = eightmode == 'open' ? i18n.t('wifi.open') : (eightmode)
-                $('td:eq(11)', nRow).html(eightmode)
-                
+
                 // Format Link Auth
                 var linkauth=$('td:eq(12)', nRow).html();
                 linkauth = linkauth == 'none' ? i18n.t('wifi.none') :
@@ -115,13 +112,18 @@
                 linkauth = linkauth == 'wpa3-sae' ? i18n.t('wifi.wpa3-sae') :
                 (linkauth === 'wpa2' ? i18n.t('wifi.wpa2') : linkauth)
                 $('td:eq(12)', nRow).html(linkauth)
-                
+
                 // Format AP Mode
                 var apmode=$('td:eq(13)', nRow).html();
                 apmode = apmode == 'station' ? i18n.t('wifi.station') :
                 apmode = apmode == 'station ' ? i18n.t('wifi.station') : (apmode)
                 $('td:eq(13)', nRow).html(apmode)
-                                
+
+                // Format 802.1x mode
+                var eightmode=$('td:eq(16)', nRow).html();
+                eightmode = eightmode == 'open' ? i18n.t('wifi.open') : (eightmode)
+                $('td:eq(16)', nRow).html(eightmode)
+
                 // Blank row if no wifi
                 var wifistate=$('td:eq(4)', nRow).html();
                 if ( wifistate == 'no wifi' || wifistate == 'off' || wifistate == 'init') {
@@ -136,8 +138,10 @@
                     $('td:eq(12)', nRow).html("")
                     $('td:eq(13)', nRow).html("")
                     $('td:eq(14)', nRow).html("")
+                    $('td:eq(15)', nRow).html("")
+                    $('td:eq(16)', nRow).html("")
                 }
-                
+
                 // Format wifi state
                 var wifistate=$('td:eq(4)', nRow).html();
                 wifistate = wifistate == 'running' ? i18n.t('wifi.running') :

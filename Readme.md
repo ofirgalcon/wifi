@@ -34,3 +34,5 @@ Table Schema
 * channel (string) Channel of wireless network
 * snr (integer) Signal to noise ratio
 * known_networks (medium text) JSON string detailing known wireless networks
+* phy_mode (string) PHY mode of the current active connection
+* country_code (string) Current contry code of the WiFi
