@@ -71,6 +71,25 @@ $(document).on('appReady', function(){
                            rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+i18n.t('wifi.station')+'</td></tr>';
                         }
 
+                        else if (prop == 'ssid' || prop == 'bssid') {
+                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+d[prop]+'</td></tr>';
+
+                            // Add the Wi-Fi network name to the client detail if Wi-Fi is the active primary service
+                            if ($('.machine-hostname').parent().parent().parent().text().includes("Wi-Fi")) {
+
+                                if (prop == 'bssid'){
+                                    d[prop] = d[prop].toUpperCase()
+                                }
+
+                               $('.machine-hostname').parent().parent().parent()
+                               .append($('<tr>')
+                                   .append($('<th>')
+                                       .append('Wi-Fi '+i18n.t('wifi.'+prop)))
+                                   .append($('<td>')
+                                       .append(d[prop])))
+                            }
+                        }
+
                         else {
                             rows = rows + '<tr><th style="width: 200px;">'+i18n.t('wifi.'+prop)+'</th><td style="max-width: 500px;">'+d[prop]+'</td></tr>';
                         }
