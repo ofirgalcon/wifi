@@ -23,12 +23,11 @@
                   <th data-i18n="wifi.op_mode" data-colname='wifi.op_mode'></th>
                   <th data-colname='wifi.country_code' data-colname='wifi.country_code'></th>
                   <th data-colname='wifi.mcs'>MCS</th>
-                  <th data-i18n="wifi.x802_11_auth_short" data-colname='wifi.x802_11_auth'></th>
               </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td data-i18n="listing.loading" colspan="17" class="dataTables_empty"></td>
+                    <td data-i18n="listing.loading" colspan="16" class="dataTables_empty"></td>
                 </tr>
             </tbody>
           </table>

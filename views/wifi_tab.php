@@ -34,7 +34,7 @@ $(document).on('appReady', function(){
                 for (var prop in d){
                     // Skip skipThese
                     if(skipThese.indexOf(prop) == -1){
-                        if (d[prop] == '' || d[prop] == null || d[prop] == "{}"){
+                        if ((d[prop] == '' || d[prop] == null || d[prop] == "{}") && d[prop] !== "0"){
                         // Do nothing for empty values to blank them
                         }
 
@@ -59,7 +59,7 @@ $(document).on('appReady', function(){
                            rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+i18n.t('wifi.noise_detail')+'">'+d[prop]+' db</span></td></tr>';
                         }
 
-                        else if(prop == 'state' || prop == 'link_auth'){
+                        else if(prop == 'state' || (prop == 'link_auth' && d[prop].includes("-"))){
                            rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+i18n.t('wifi.'+d[prop])+'</td></tr>';
                         }
 

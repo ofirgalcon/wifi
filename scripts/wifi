@@ -17,6 +17,73 @@ from Foundation import CFPreferencesCopyAppValue
 def get_wifi_info():
 
     try:
+        cmd = ['/usr/bin/wdutil','info']
+        proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, unused_error) = proc.communicate()
+        output = output.decode("utf-8", errors="ignore")
+
+    except Exception as e:
+        # On error, set state to unknown
+        return {"state":"unknown"}
+
+    # Check if Mac has WiFi or sharing is active
+    if output == "":
+        # Check if WiFi sharing is active
+        if check_wifi_sharing():
+            return {"state":"sharing"}
+        else:
+            return {"state":"no wifi"}
+
+    # Check we the wifi is turned off
+    if 'Power                : Off' in output:
+        return {"state":"off"}
+
+    info = {}
+    for line in output.split("\n"):
+        if "    RSSI                 : " in line:
+            info['agrctlrssi'] = re.sub('[^0-9-]','', remove_all('    RSSI                 : ', line).strip())
+        elif "    Noise                : " in line:
+            info['agrctlnoise'] = re.sub('[^0-9-]','', remove_all('    Noise                : ', line).strip())
+        
+        elif "    Tx Rate              : " in line:
+            info['lasttxrate'] = re.sub('[^0-9]','', remove_all('    Tx Rate              : ', line.split(".")[0]).strip())
+        elif "    MCS Index            : " in line:
+            info['mcs'] = re.sub('[^0-9]','', remove_all('    MCS Index            : ', line).strip())
+
+        elif "    Power                : On" in line:
+            info['state'] = "running"
+        elif "    Op Mode              : " in line:
+            info['op_mode'] = remove_all('    Op Mode              : ', line.replace('STA', 'station')).strip()
+
+        elif "    Security             : " in line:
+            info['link_auth'] = remove_all('    Security             : ', line).strip()
+        elif "    PHY Mode             : " in line:
+            info['phy_mode'] = "802." + remove_all('    PHY Mode             : ', line).strip()
+        elif "    Country Code         : " in line:
+            info['country_code'] = remove_all('    Country Code         : ', line).strip()
+        elif "    BSSID                : " in line:
+            info['bssic'] = format_mac_address(remove_all('    BSSID                : ', line).strip())
+        elif "    SSID                 : " in line:
+            info['ssid'] = remove_all('    SSID                 : ', line).strip()
+        
+        elif "    Guard Interval       : " in line:
+            info['guardinterval'] = remove_all('    Guard Interval       : ', line).strip()
+        elif "    NSS                  : " in line:
+            info['nss'] = remove_all('    NSS                  : ', line).strip()
+        elif "    Channel              : " in line:
+            info['channel'] = remove_all('    Channel              : ', line.replace('5g', '5Ghz ').replace('2g', '2.4Ghz ').replace('6g', '6Ghz ')).strip()
+
+    # Caclulate SNR
+    if "agrctlrssi" in info and "agrctlnoise" in info:
+        info["snr"] = int(info["agrctlrssi"]) - int(info["agrctlnoise"])
+
+    return info
+
+def get_wifi_info_legacy():
+
+    try:
         cmd = ['/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport','-I']
         proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
                                 stdin=subprocess.PIPE,
@@ -380,6 +447,9 @@ def to_bool(s):
     else:
         return 0
 
+def remove_all(substr, str):
+    return str.replace(substr, "")
+
 def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
@@ -388,7 +458,7 @@ def merge_two_dicts(x, y):
 def getDarwinVersion():
     """Returns the Darwin version."""
     darwin_version_tuple = platform.release().split('.')
-    return int(darwin_version_tuple[0]) 
+    return int(darwin_version_tuple[0])
 
 def format_mac_address(mac_address):
     mac_format = "{:0>2}:{:0>2}:{:0>2}:{:0>2}:{:0>2}:{:0>2}"
@@ -407,13 +477,22 @@ def main():
         known_networks = {}
 
     result = dict()
-    result = merge_two_dicts(get_wifi_info(), known_networks)
 
-    # Get additional WiFi info only if WiFi is active and connected
-    if result["state"] == "running":
-        result = merge_two_dicts(get_additional_wifi_info(), result)
+    # If less than macOS 13 (Darwin 22), use legacy method to get wifi data
+    if getDarwinVersion() < 22:
+        result = get_wifi_info_legacy()
 
-    # Write ard results to cache
+        # Get additional WiFi info only if WiFi is active and connected
+        if result["state"] == "running":
+            result = merge_two_dicts(get_additional_wifi_info(), result)
+
+        # Only merge in the known networks if not empty
+        if known_networks != {}:
+            result = merge_two_dicts(known_networks, result)  
+    else:
+        result = merge_two_dicts(get_wifi_info(), known_networks)
+
+    # Write wifi results to cache
     cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
     output_plist = os.path.join(cachedir, 'wifi.plist')
     FoundationPlist.writePlist(result, output_plist)
