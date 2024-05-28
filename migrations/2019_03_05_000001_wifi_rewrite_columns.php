@@ -13,7 +13,7 @@ class WifiRewriteColumns extends Migration
         $capsule::schema()->table($this->tableName, function (Blueprint $table) {
             $table->integer('snr')->nullable();
             $table->mediumText('known_networks')->nullable();
-            
+
             $table->index('agrctlrssi');
             $table->index('agrextrssi');
             $table->index('agrctlnoise');
@@ -29,13 +29,13 @@ class WifiRewriteColumns extends Migration
             $table->index('snr');
         });
     }
-    
+
     public function down()
     {
         $capsule = new Capsule();
         $capsule::schema()->table($this->tableName, function (Blueprint $table) {
             $table->dropColumn('snr');
-            $table->dropColumn('known_networks');       
+            $table->dropColumn('known_networks');
         });
     }
 }

@@ -31,4 +31,3 @@ buttons:
     class: btn-info
     search_component: sharing
     hide_when_zero: true
-    

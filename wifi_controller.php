@@ -89,11 +89,11 @@ class Wifi_controller extends Module_controller
         // Remove non-column name characters
         $column = preg_replace("/[^A-Za-z0-9_\-]]/", '', $column);
 
-        $sql = "SELECT COUNT(CASE WHEN ".$column." <> '' AND ".$column." IS NOT NULL THEN 1 END) AS count, ".$column." 
+        $sql = "SELECT COUNT(CASE WHEN ".$column." <> '' AND ".$column." IS NOT NULL THEN 1 END) AS count, ".$column."
                 FROM wifi
                 LEFT JOIN reportdata USING (serial_number)
                 ".get_machine_group_filter()."
-                AND ".$column." <> '' AND ".$column." IS NOT NULL 
+                AND ".$column." <> '' AND ".$column." IS NOT NULL
                 GROUP BY ".$column."
                 ORDER BY count DESC";
 
@@ -113,7 +113,7 @@ class Wifi_controller extends Module_controller
         $serial_number = preg_replace("/[^A-Za-z0-9_\-]]/", '', $serial_number);
 
         $sql = "SELECT ssid, bssid, state, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, phy_mode, mcs, country_code, agrctlrssi, agrctlnoise, snr, known_networks
-                        FROM wifi 
+                        FROM wifi
                         WHERE serial_number = '$serial_number'";
 
         $obj = new View();

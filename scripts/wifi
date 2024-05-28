@@ -66,11 +66,11 @@ def get_wifi_info():
         elif "    Country Code         : " in line:
             info['country_code'] = remove_all('    Country Code         : ', line).strip()
 
-        elif "    BSSID                : " in line and "None" not in line:
+        elif "    BSSID                : " in line and "None" not in line and "<redacted>" not in line:
             info['bssid'] = format_mac_address(remove_all('    BSSID                : ', line).strip())
-        elif "    BSSID                : " in line and "None" in line:
+        elif "    BSSID                : " in line and "None" in line and "<redacted>" not in line:
             info['state'] = "init" # Show that the wifi is on, but not connected
-        elif "    SSID                 : " in line:
+        elif "    SSID                 : " in line and "<redacted>" not in line:
             info['ssid'] = remove_all('    SSID                 : ', line).strip()
 
         elif "    Guard Interval       : " in line:
@@ -179,6 +179,42 @@ def check_wifi_sharing():
 
     except Exception:
         return False
+
+def get_wifi_ssid():
+
+    cmd = ['/usr/sbin/networksetup','-getairportnetwork',get_wifi_interface()]
+    proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, unused_error) = proc.communicate()
+    return output.decode("utf-8", errors="ignore").replace('Current Wi-Fi Network: ', '').replace("\n", "")
+
+def get_wifi_bssid(ssid):
+
+    try:
+        plist = FoundationPlist.readPlist("/Library/Preferences/com.apple.wifi.known-networks.plist")
+
+        bssid = ""
+        date = ""
+
+        # Check that we have the SSID in the preference file and it contains a BSSList entry
+        if 'wifi.network.ssid.'+ssid in plist and "BSSList" in plist['wifi.network.ssid.'+ssid]:
+            # Process each BSS entry
+            for bss in plist['wifi.network.ssid.'+ssid]['BSSList']:
+                if 'BSSID' in bss and date == "":
+                    # If first check, save the date if exists and bssid
+                    bssid = bss['BSSID']
+                    if 'LastAssociatedAt' in bss:
+                        date = bss['LastAssociatedAt']
+                elif 'BSSID' in bss and 'LastAssociatedAt' in bss and bss['LastAssociatedAt'] > date:
+                    # Compare other bssid entries to make sure none of them are newer
+                    bssid = bss['BSSID']
+                    date = bss['LastAssociatedAt']
+
+        return bssid
+
+    except Exception:
+        return ""
 
 def get_networks():
 
@@ -496,6 +532,13 @@ def main():
             result = merge_two_dicts(known_networks, result)
     else:
         result = merge_two_dicts(get_wifi_info(), known_networks)
+
+        # Starting with macOS 14.5 some of these values are no longer
+        # returned so we need to get them by other means
+        if 'ssid' not in result:
+            result['ssid'] = get_wifi_ssid()
+        if 'bssid' not in result:
+            result['bssid'] = get_wifi_bssid(result['ssid'])
 
     # Write wifi results to cache
     cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))

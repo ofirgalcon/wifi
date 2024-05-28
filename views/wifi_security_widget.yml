@@ -46,4 +46,3 @@ buttons:
     class: btn-info
     search_component: wps
     hide_when_zero: true
-    

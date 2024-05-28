@@ -10,9 +10,9 @@ class WifiFixNullableColumns extends Migration
     public function up()
     {
         $capsule = new Capsule();
-    
+
         $capsule::schema()->table($this->tableName, function (Blueprint $table) {
-                        
+
             $table->integer('agrctlrssi')->nullable()->change();
             $table->integer('agrextrssi')->nullable()->change();
             $table->integer('agrctlnoise')->nullable()->change();
@@ -28,10 +28,10 @@ class WifiFixNullableColumns extends Migration
             $table->string('ssid')->nullable()->change();
             $table->integer('mcs')->nullable()->change();
             $table->string('channel')->nullable()->change();
-         
+
         });
      }
-    
+
     public function down()
     {
 
