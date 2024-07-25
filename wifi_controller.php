@@ -64,6 +64,7 @@ class Wifi_controller extends Module_controller
                 COUNT(CASE WHEN link_auth LIKE '%wep%' THEN 1 END) AS wep,
                 COUNT(CASE WHEN link_auth LIKE '%wpa-psk%' THEN 1 END) AS wpa,
                 COUNT(CASE WHEN link_auth LIKE '%wpa2-psk%' THEN 1 END) AS wpa2,
+                COUNT(CASE WHEN link_auth LIKE '%wpa2 personal%' THEN 1 END) AS wpa2,
                 COUNT(CASE WHEN link_auth LIKE '%wpa3-sae%' THEN 1 END) AS wpa3
                 FROM wifi
                 LEFT JOIN reportdata USING(serial_number)
