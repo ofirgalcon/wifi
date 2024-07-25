@@ -14,10 +14,6 @@ sys.path.insert(0, '/usr/local/munkireport')
 from munkilib import FoundationPlist
 from Foundation import CFPreferencesCopyAppValue
 
-# def remove_all(sub, s):
-#     # Helper function to remove substrings
-#     return s.replace(sub, '')
-
 def get_wifi_info():
     try:
         cmd = ['/usr/bin/wdutil', 'info']
@@ -34,6 +30,7 @@ def get_wifi_info():
     # Initialize info dictionary
     info = {"state": "unknown"}
 
+    # Set power state
     if "Power                : On" in output:
         info['state'] = "running"
     elif "Power                : Off" in output:

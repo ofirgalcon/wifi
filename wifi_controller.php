@@ -62,10 +62,9 @@ class Wifi_controller extends Module_controller
                 COUNT(CASE WHEN link_auth LIKE '%leap%' THEN 1 END) AS leap,
                 COUNT(CASE WHEN link_auth LIKE '%wps%' THEN 1 END) AS wps,
                 COUNT(CASE WHEN link_auth LIKE '%wep%' THEN 1 END) AS wep,
-                COUNT(CASE WHEN link_auth LIKE '%wpa-psk%' THEN 1 END) AS wpa,
-                COUNT(CASE WHEN link_auth LIKE '%wpa2-psk%' THEN 1 END) AS wpa2,
-                COUNT(CASE WHEN link_auth LIKE '%wpa2 personal%' THEN 1 END) AS wpa2,
-                COUNT(CASE WHEN link_auth LIKE '%wpa3-sae%' THEN 1 END) AS wpa3
+                COUNT(CASE WHEN link_auth LIKE '%wpa-%' THEN 1 END) AS wpa,
+                COUNT(CASE WHEN link_auth LIKE '%wpa2%' THEN 1 END) AS wpa2,
+                COUNT(CASE WHEN link_auth LIKE '%wpa3%' THEN 1 END) AS wpa3
                 FROM wifi
                 LEFT JOIN reportdata USING(serial_number)
                 ".get_machine_group_filter();

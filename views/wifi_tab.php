@@ -1,14 +1,3 @@
-
-<div id="lister" style="font-size: large; float: right;">
-    <a href="/show/listing/wifi/wifi" title="List">
-        <i class="btn btn-default tab-btn fa fa-list"></i>
-    </a>
-</div>
-<div id="report_btn" style="font-size: large; float: right;">
-    <a href="/show/report/wifi/wifi_report" title="Report">
-        <i class="btn btn-default tab-btn fa fa-th"></i>
-    </a>
-</div>
 <h2 data-i18n="wifi.wifiinfo"></h2>
 <div id="wifi-tab"></div>
 
