@@ -113,8 +113,10 @@ class Wifi_controller extends Module_controller
         $serial_number = preg_replace("/[^A-Za-z0-9_\-]]/", '', $serial_number);
 
         $sql = "SELECT ssid, bssid, state, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, phy_mode, mcs, country_code, agrctlrssi, agrctlnoise, snr, known_networks
-                        FROM wifi
-                        WHERE serial_number = '$serial_number'";
+                    FROM wifi
+                    LEFT JOIN reportdata USING (serial_number)
+                    ".get_machine_group_filter()."
+                    AND serial_number = '$serial_number'";
 
         $obj = new View();
         $queryobj = new Wifi_model();
