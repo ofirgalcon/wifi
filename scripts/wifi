@@ -73,7 +73,12 @@ def get_wifi_info():
         elif "NSS                  : " in line:
             info['nss'] = remove_all('NSS                  : ', line).strip()
         elif "Channel              : " in line:
-            info['channel'] = remove_all('Channel              : ', line.replace('5g', '5Ghz ').replace('2g', '2.4Ghz ').replace('6g', '6Ghz ')).strip()
+
+            # If less than macOS 15 (Darwin 24), do different things to the channel
+            if getDarwinVersion() < 24:
+                info['channel'] = remove_all('Channel              : ', line.replace('5g', '5Ghz ').replace('2g', '2.4Ghz ').replace('6g', '6Ghz ')).strip()
+            else: 
+                info['channel'] = remove_all('Channel              : ', (line.replace('5g', '5Ghz ').replace('2g', '2.4Ghz ').replace('6g', '6Ghz ').replace('/', ' (')).strip()+' Mhz, Active)')
 
     # Calculate SNR if RSSI and Noise are present
     if 'agrctlrssi' in info and 'agrctlnoise' in info:
@@ -177,16 +182,47 @@ def check_wifi_sharing():
 
 def get_wifi_ssid():
 
-    cmd = ['/usr/sbin/networksetup','-getairportnetwork',get_wifi_interface()]
-    proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (output, unused_error) = proc.communicate()
+    # If less than macOS 15 (Darwin 24), use networksetup to get ssid
+    if getDarwinVersion() < 24:
+        cmd = ['/usr/sbin/networksetup','-getairportnetwork',get_wifi_interface()]
+        proc = subprocess.Popen(cmd, shell=False, bufsize=-1,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, unused_error) = proc.communicate()
 
-    if (output is not None):
-        return output.decode("utf-8", errors="ignore").replace('Current Wi-Fi Network: ', '').replace("\n", "")
+        if (output is not None):
+            return output.decode("utf-8", errors="ignore").replace('Current Wi-Fi Network: ', '').replace("\n", "")
+        else:
+            return False
+
     else:
-        return False
+        # Apple changed this (again) with macOS 15
+        # need to use super dark magic now to get the ssid
+        plist = FoundationPlist.readPlist("/Library/Preferences/com.apple.wifi.known-networks.plist")
+
+        ssid = ""
+        date = ""
+
+        for wifi in plist:
+
+            # Check that we have the SSID in the preference file and it contains a BSSList entry
+            if "BSSList" in plist[wifi]:
+                # Process each BSS entry
+                for bss in plist[wifi]['BSSList']:
+                    if 'BSSID' in bss and date == "":
+                        # If first check, save the date if exists and ssid
+                        ssid = wifi.replace('wifi.network.ssid.', "")
+                        if 'LastAssociatedAt' in bss:
+                            date = bss['LastAssociatedAt']
+                    elif 'BSSID' in bss and 'LastAssociatedAt' in bss and bss['LastAssociatedAt'] > date:
+                        # Compare other bssid entries to make sure none of them are newer
+                        ssid = wifi.replace('wifi.network.ssid.', "")
+                        date = bss['LastAssociatedAt']
+
+        if ssid != "":
+            return ssid
+        else:
+            return False
 
 def get_wifi_bssid(ssid):
 
@@ -533,7 +569,7 @@ def main():
         result = merge_two_dicts(get_wifi_info(), known_networks)
 
         # Starting with macOS 14.5 some of these values are no longer
-        # returned so we need to get them by other means
+        # returned with wdutil so we need to get them by other means
         if 'ssid' not in result:
             result['ssid'] = get_wifi_ssid()
         if 'bssid' not in result and 'ssid' in result:
