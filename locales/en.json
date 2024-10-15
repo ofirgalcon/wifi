@@ -73,5 +73,10 @@
     "last_discovered_at": "Last Discovered At",
     "autojoin_disabled": "Auto Join Disabled",
     "add_reason": "Add Method",
-    "standalone_6g": "Standalone 6G"
+    "standalone_6g": "Standalone 6G",
+    "private_mac_address": "Private MAC",
+    "private_mac_updated_at": "Private MAC Updated",
+    "private_mac_mode_user": "Private MAC User Setting",
+    "private_mac_mode_user_updated": "Private MAC User Setting Updated",
+    "private_mac_eval_at": "Private MAC Evaluated"
 }

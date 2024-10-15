@@ -28,6 +28,8 @@ class Wifi_model extends \Model
         $this->rs['known_networks'] = "";
         $this->rs['phy_mode'] = null;
         $this->rs['country_code'] = null;
+        $this->rs['private_mac_address'] = null;
+        $this->rs['private_mac_mode_user'] = null;
 
         if ($serial) {
             $this->retrieve_record($serial);
@@ -83,7 +85,7 @@ class Wifi_model extends \Model
             $plist = $parser->toArray();
 
             // Process each of the items
-            foreach (array('agrctlrssi', 'agrextrssi', 'agrctlnoise', 'agrextnoise', 'state', 'op_mode', 'lasttxrate', 'lastassocstatus', 'maxrate', 'x802_11_auth', 'link_auth', 'bssid', 'ssid', 'mcs', 'channel', 'snr', 'known_networks', 'phy_mode', 'country_code') as $item) {
+            foreach (array('agrctlrssi', 'agrextrssi', 'agrctlnoise', 'agrextnoise', 'state', 'op_mode', 'lasttxrate', 'lastassocstatus', 'maxrate', 'x802_11_auth', 'link_auth', 'bssid', 'ssid', 'mcs', 'channel', 'snr', 'known_networks', 'phy_mode', 'country_code', 'private_mac_address', 'private_mac_mode_user') as $item) {
 
                 // If key exists and is zero, set it to zero
                 if ( array_key_exists($item, $plist) && $plist[$item] === 0) {

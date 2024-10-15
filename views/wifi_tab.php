@@ -106,10 +106,106 @@ $(document).on('appReady', function(){
             })
         }
 
-        // Only draw the known networks table if there is something in it and contains a new macOS 11+ key
-        if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "')){
+        // Only draw the known networks table if there is something in it and contains a new macOS 15+ key
+        if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "') && data[0]["known_networks"].includes(', "private_mac_address": "')){
             $('#wifi-tab')
-                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="14" class="dataTables_empty"></td></tr></tbody></table></div>')
+                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.private_mac_address">'+i18n.t('wifi.private_mac_address')+'</th><th data-colname="wifi.private_mac_mode_user">'+i18n.t('wifi.private_mac_mode_user')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="18" class="dataTables_empty"></td></tr></tbody></table></div>')
+
+                // Parse the JSON string into vaiable
+                var table_data = JSON.parse(data[0]["known_networks"]);
+                var known_networks = true;
+                $('#wifi_known_networks-table').DataTable({
+
+                    data: table_data,
+                    order: [[0,'asc']],
+                    autoWidth: false,
+                    columns: [
+                        { data: 'ssid' },
+                        { data: 'security_type' },
+                        { data: 'private_mac_address' },
+                        { data: 'private_mac_mode_user' },
+                        { data: 'last_connected_system' },
+                        { data: 'last_connected_user' },
+                        { data: 'last_discovered_at' },
+                        { data: 'channel' },
+                        { data: 'personal_hotspot' },
+                        { data: 'autojoin_disabled' },
+                        { data: 'possibly_hidden_network' },
+                        { data: 'captive' },
+                        { data: 'passpoint' },
+                        { data: 'roaming_profile_type' },
+                        { data: 'add_reason' },
+                        { data: 'temporarily_disabled' },
+                        { data: 'standalone_6g' },
+                        { data: 'bssid_list' }
+                    ],
+                    createdRow: function( nRow, aData, iDataIndex ) {
+                            // Format date
+                            var event = parseInt($('td:eq(4)', nRow).html());
+                            if ( !isNaN(event) ){
+                                var date = new Date(event * 1000);
+                                $('td:eq(4)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
+                            } else {
+                                $('td:eq(4)', nRow).text("");
+                            }
+
+                            var event = parseInt($('td:eq(5)', nRow).html());
+                            if ( !isNaN(event) ){
+                                var date = new Date(event * 1000);
+                                $('td:eq(5)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
+                            } else {
+                                $('td:eq(5)', nRow).text("");
+                            }
+
+                            var event = parseInt($('td:eq(6)', nRow).html());
+                            if ( !isNaN(event) ){
+                                var date = new Date(event * 1000);
+                                $('td:eq(6)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
+                            } else {
+                                $('td:eq(6)', nRow).text("");
+                            }
+
+                            var colvar=$('td:eq(8)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(8)', nRow).text(colvar)
+
+                            var colvar=$('td:eq(9)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(9)', nRow).text(colvar)
+
+                            var colvar=$('td:eq(10)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(10)', nRow).text(colvar)
+
+                            var colvar=$('td:eq(11)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(11)', nRow).text(colvar)
+
+                            var colvar=$('td:eq(12)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(12)', nRow).text(colvar)
+
+                            var colvar=$('td:eq(15)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(15)', nRow).text(colvar) 
+
+                            var colvar=$('td:eq(16)', nRow).html();
+                            colvar = colvar == '1' ? i18n.t('yes') :
+                            (colvar === '0' ? i18n.t('no') : '')
+                            $('td:eq(16)', nRow).text(colvar)
+                    }
+                });
+
+        // Only draw the known networks table if there is something in it and contains a new macOS 11+ key
+        } else if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "')){
+            $('#wifi-tab')
+                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="16" class="dataTables_empty"></td></tr></tbody></table></div>')
 
                 // Parse the JSON string into vaiable
                 var table_data = JSON.parse(data[0]["known_networks"]);

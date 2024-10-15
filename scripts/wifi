@@ -32,9 +32,9 @@ def get_wifi_info():
     info = {"state": "unknown"}
 
     # Set power state
-    if "Power                : On" in output:
+    if "Power                : On [On]" in output:
         info['state'] = "running"
-    elif "Power                : Off" in output:
+    elif "Power                : Off [Off]" in output:
         info['state'] = "off"
 
     # Check if Mac has WiFi or sharing is active
@@ -276,6 +276,26 @@ def get_wifi_bssid(ssid):
     except Exception:
         return ""
 
+def get_private_mac_info(ssid):
+
+    try:
+        plist = FoundationPlist.readPlist("/Library/Preferences/com.apple.wifi.known-networks.plist")
+
+        out = {}
+
+        # Check that we have the SSID in the preference file and it contains a PrivateMACAddressModeUserSetting entry
+        if 'wifi.network.ssid.'+ssid in plist and "PrivateMACAddressModeUserSetting" in plist['wifi.network.ssid.'+ssid]:
+            out['private_mac_mode_user'] = plist['wifi.network.ssid.'+ssid]['PrivateMACAddressModeUserSetting']
+
+        # Check that we have the SSID in the preference file and it contains a CachedPrivateMACAddress entry
+        if 'wifi.network.ssid.'+ssid in plist and "CachedPrivateMACAddress" in plist['wifi.network.ssid.'+ssid]:
+            out['private_mac_address'] = plist['wifi.network.ssid.'+ssid]['CachedPrivateMACAddress']
+
+        return out
+
+    except Exception:
+        return {}
+
 def get_networks():
 
     try:
@@ -304,12 +324,17 @@ def get_networks():
             "ssid":"",
             "channel_history":"",
             "bssid_list":"",
-            "add_reason":""}
+            "add_reason":"",
+            "private_mac_address":"",
+            "private_mac_updated_at":"",
+            "private_mac_mode_user":"",
+            "private_mac_mode_user_updated":"",
+            "private_mac_eval_at":""}
+
             for key in plist[network]:
 
                 if key == "CaptiveProfile" and "CaptiveNetwork" in plist[network]["CaptiveProfile"]:
                     ssid_entry["captive"] = to_bool(plist[network]["CaptiveProfile"]["CaptiveNetwork"])
-
 
                 elif key == "AddedAt":
                     ssid_entry["added_ad"] = string_to_time(plist[network][key])
@@ -319,6 +344,12 @@ def get_networks():
                     ssid_entry["last_connected_user"] = string_to_time(plist[network][key])
                 elif key == "LastDiscoveredAt":
                     ssid_entry["last_discovered_at"] = string_to_time(plist[network][key])
+                elif key == "CachedPrivateMACAddressUpdatedAt":
+                    ssid_entry["private_mac_updated_at"] = string_to_time(plist[network][key])
+                elif key == "PrivateMACAddressEvaluatedAt":
+                    ssid_entry["private_mac_eval_at"] = string_to_time(plist[network][key])
+                elif key == "PrivateMACAddressModeUserSettingUpdatedAt":
+                    ssid_entry["private_mac_mode_user_updated"] = string_to_time(plist[network][key])
 
                 elif key == "PasspointSPRoamingEnabled":
                     ssid_entry["passpoint"] = to_bool(plist[network][key])
@@ -335,16 +366,21 @@ def get_networks():
                 elif key == "Standalone6G":
                     ssid_entry["standalone_6g"] = to_bool(plist[network][key])
 
+
                 elif key == "SupportedSecurityTypes":
                     ssid_entry["security_type"] = plist[network][key]
                 elif key == "AddReason":
                     ssid_entry["add_reason"] = plist[network][key]
+                elif key == "CachedPrivateMACAddress":
+                    ssid_entry["private_mac_address"] = plist[network][key]
+                elif key == "PrivateMACAddressModeUserSetting":
+                    ssid_entry["private_mac_mode_user"] = plist[network][key]
 
                 elif key == "SystemMode":
                     ssid_entry["system_mode"] = to_bool(plist[network][key])
 
                 elif key == "SSID":
-                    ssid_entry["ssid"] = plist[network][key].decode('ascii')
+                    ssid_entry["ssid"] = plist[network][key].decode("utf-8", errors="ignore")
 
 
                 elif key == "__OSSpecific__":
@@ -599,6 +635,10 @@ def main():
             result['ssid'] = get_wifi_ssid()
         if 'bssid' not in result and 'ssid' in result:
             result['bssid'] = get_wifi_bssid(result['ssid'])
+
+    # If greater than macOS 15 (Darwin 24), get private MAC address data
+    if getDarwinVersion() > 23 and 'ssid' in result:
+        result.update(get_private_mac_info(result['ssid']))
 
     # Write wifi results to cache
     cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))

@@ -1,7 +1,7 @@
 WiFi module
 ==============
 
-Provides connected WiFi network information gathered by `/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I` and various WiFi preferences
+Provides connected WiFi network information gathered by macOS binaries and various WiFi preferences
 
 Client Preferences
 ---
@@ -36,3 +36,5 @@ Table Schema
 * known_networks (medium text) JSON string detailing known wireless networks
 * phy_mode (string) PHY mode of the current active connection
 * country_code (string) Current contry code of the WiFi
+* private_mac_address (string) Private MAC address (macOS 15+ only)
+* private_mac_mode_user (string) Private MAC address setting (macOS 15+ only)

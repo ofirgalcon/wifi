@@ -112,7 +112,7 @@ class Wifi_controller extends Module_controller
         // Remove non-serial number characters
         $serial_number = preg_replace("/[^A-Za-z0-9_\-]]/", '', $serial_number);
 
-        $sql = "SELECT ssid, bssid, state, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, phy_mode, mcs, country_code, agrctlrssi, agrctlnoise, snr, known_networks
+        $sql = "SELECT ssid, bssid, state, private_mac_address, private_mac_mode_user, op_mode, x802_11_auth, link_auth, lasttxrate, maxrate, channel, phy_mode, mcs, country_code, agrctlrssi, agrctlnoise, snr, known_networks
                     FROM wifi
                     LEFT JOIN reportdata USING (serial_number)
                     ".get_machine_group_filter()."

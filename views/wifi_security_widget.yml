@@ -9,7 +9,7 @@ buttons:
   - label: none
     i18n_label: wifi.open
     class: btn-danger 
-    search_component: open
+    search_component: none
     hide_when_zero: true
   - label: wep
     i18n_label: wifi.wep
@@ -19,17 +19,17 @@ buttons:
   - label: wpa
     i18n_label: wifi.wpa-psk
     class: btn-danger 
-    search_component: wpa-psk
+    search_component: wpa
     hide_when_zero: true
   - label: wpa2
     i18n_label: wifi.wpa2-psk
     class: btn-warning 
-    search_component: wpa2-psk
+    search_component: wpa2
     hide_when_zero: true
   - label: wpa3
     i18n_label: wifi.wpa3-sae
     class: btn-success
-    search_component: wpa3-sae
+    search_component: wpa3
     hide_when_zero: true
   - label: x8021
     i18n_label: wifi.802.1x
