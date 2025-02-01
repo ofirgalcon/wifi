@@ -1,3 +1,14 @@
+
+<div id="lister" style="font-size: large; float: right;">
+    <a href="/show/listing/wifi/wifi" title="List">
+        <i class="btn btn-default tab-btn fa fa-list"></i>
+    </a>
+</div>
+<div id="report_btn" style="font-size: large; float: right;">
+    <a href="/show/report/wifi/wifi_report" title="Report">
+        <i class="btn btn-default tab-btn fa fa-th"></i>
+    </a>
+</div>
 <h2 data-i18n="wifi.wifiinfo"></h2>
 <div id="wifi-tab"></div>
 
@@ -5,296 +16,157 @@
 
 <script>
 $(document).on('appReady', function(){
-    // Set blank tab badge
-    $('#wifi-cnt').text("");
+    // Cache jQuery selectors and i18n calls
+    const $wifiMsg = $('#wifi-msg');
+    const $wifiCnt = $('#wifi-cnt');
+    const $wifiTab = $('#wifi-tab');
+    const $machineHostname = $('.machine-hostname').parent().parent().parent();
+    const t = i18n.t; // Cache translation function
+
+    // Set blank tab badge once
+    $wifiCnt.empty();
+
+    // Create table templates once
+    const tableTemplate = $('<table style="width: 450px;">').addClass('table table-striped table-condensed');
+    const knownNetworksTemplate = `
+        <div id="wifi_known_networks-table-view" class="row" style="padding: 0 15px;">
+            <h4>${t('wifi.known_networks')}</h4>
+            <table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table">
+                <thead>
+                    <tr>
+                        ${['ssid', 'security_type', 'private_mac_address', 'private_mac_mode_user', 
+                           'last_connected_system', 'last_connected_user', 'last_discovered_at', 'channel',
+                           'personal_hotspot', 'autojoin_disabled', 'possibly_hidden_network', 'captive',
+                           'passpoint', 'roaming_profile_type', 'add_reason', 'temporarily_disabled',
+                           'standalone_6g', 'bssid_list']
+                            .map(col => `<th data-colname="wifi.${col}">${t('wifi.' + col)}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td data-i18n="listing.loading" colspan="18" class="dataTables_empty"></td></tr>
+                </tbody>
+            </table>
+        </div>`;
 
     $.getJSON(appUrl + '/module/wifi/get_tab_data/' + serialNumber, function(data){
-
-        if( ! data ){
-            $('#wifi-msg').text(i18n.t('no_data'));
-        } else if (data[0]['state'] == 'no wifi') {
-            $('#wifi-msg').text(i18n.t('wifi.no_wifi_client_tab'));
-        } else if (data[0]['state'] == 'off') {
-            $('#wifi-msg').text(i18n.t('wifi.off_client_tab'));
-            // Update the tab badge
-            $('#wifi-cnt').text(i18n.t('off'));
-        } else {
-
-            // Hide
-            $('#wifi-msg').text('');
-            // Update the tab badge
-            $('#wifi-cnt').text(i18n.t('on'));
-
-            var skipThese = ['id', 'serial_number', 'known_networks'];
-            $.each(data, function(i,d){
-
-                // Generate rows from data
-                var rows = ''
-                var known_networks = false
-                for (var prop in d){
-                    // Skip skipThese
-                    if(skipThese.indexOf(prop) == -1){
-                        if ((d[prop] == '' || d[prop] == null || d[prop] == "{}") && d[prop] !== "0"){
-                        // Do nothing for empty values to blank them
-                        }
-
-                        else if(prop == 'snr' && d[prop] !== null){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+i18n.t('wifi.snr_detail')+'">'+d[prop]+' db</span></td></tr>';
-                        }
-                        else if(prop == 'snr'){
-                            // Calculate signal to noise ratio
-                            snr_value = d['agrctlrssi']-d['agrctlnoise']
-                            rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+i18n.t('wifi.snr_detail')+'">'+snr_value+' db</span></td></tr>';
-                        }
-
-                        else if(prop == 'lasttxrate' || prop == 'maxrate'){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+(d[prop]*0.125)+' MB/sec">'+d[prop]+" Mbps</span></td></tr>";
-                        }
-
-                        else if(prop == 'agrctlrssi'){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+i18n.t('wifi.rssi_detail')+'">'+d[prop]+' db</span></td></tr>';
-                        }
-
-                        else if(prop == 'agrctlnoise'){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td><span title="'+i18n.t('wifi.noise_detail')+'">'+d[prop]+' db</span></td></tr>';
-                        }
-
-                        else if(prop == 'state' || (prop == 'link_auth' && d[prop].includes("-"))){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+i18n.t('wifi.'+d[prop])+'</td></tr>';
-                        }
-
-                        else if(prop == 'x802_11_auth' && d[prop] == 'open'){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+i18n.t('wifi.open')+'</td></tr>';
-                        }
-
-                        else if(prop == 'op_mode' && d[prop].indexOf("station") !== -1 ){
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+i18n.t('wifi.station')+'</td></tr>';
-                        }
-
-                        else if (prop == 'ssid' || prop == 'bssid') {
-                           rows = rows + '<tr><th>'+i18n.t('wifi.'+prop)+'</th><td>'+d[prop]+'</td></tr>';
-
-                            // Add the Wi-Fi network name to the client detail if Wi-Fi is the active primary service
-                            if ($('.machine-hostname').parent().parent().parent().text().includes("Wi-Fi")) {
-
-                                if (prop == 'bssid'){
-                                    d[prop] = d[prop].toUpperCase()
-                                }
-
-                               $('.machine-hostname').parent().parent().parent()
-                               .append($('<tr>')
-                                   .append($('<th>')
-                                       .append('Wi-Fi '+i18n.t('wifi.'+prop)))
-                                   .append($('<td>')
-                                       .append(d[prop])))
-                            }
-                        }
-
-                        else {
-                            rows = rows + '<tr><th style="width: 200px;">'+i18n.t('wifi.'+prop)+'</th><td style="max-width: 500px;">'+d[prop]+'</td></tr>';
-                        }
-                    }
-                }
-
-                $('#wifi-tab')
-                    .append($('<div>')
-                        .append($('<table style="width: 450px;">')
-                            .addClass('table table-striped table-condensed')
-                            .append($('<tbody>')
-                                .append(rows))))
-
-            })
+        if (!data) {
+            $wifiMsg.text(t('no_data'));
+            return;
         }
 
-        // Only draw the known networks table if there is something in it and contains a new macOS 15+ key
-        if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "') && data[0]["known_networks"].includes(', "private_mac_address": "')){
-            $('#wifi-tab')
-                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.private_mac_address">'+i18n.t('wifi.private_mac_address')+'</th><th data-colname="wifi.private_mac_mode_user">'+i18n.t('wifi.private_mac_mode_user')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="18" class="dataTables_empty"></td></tr></tbody></table></div>')
+        const state = data[0].state;
+        if (state === 'no wifi') {
+            $wifiMsg.text(t('wifi.no_wifi_client_tab'));
+            return;
+        } 
+        if (state === 'off') {
+            $wifiMsg.text(t('wifi.off_client_tab'));
+            $wifiCnt.text(t('off'));
+            return;
+        }
 
-                // Parse the JSON string into vaiable
-                var table_data = JSON.parse(data[0]["known_networks"]);
-                var known_networks = true;
-                $('#wifi_known_networks-table').DataTable({
+        // Process main wifi data
+        $wifiMsg.empty();
+        $wifiCnt.text(t('on'));
 
-                    data: table_data,
-                    order: [[0,'asc']],
-                    autoWidth: false,
-                    columns: [
-                        { data: 'ssid' },
-                        { data: 'security_type' },
-                        { data: 'private_mac_address' },
-                        { data: 'private_mac_mode_user' },
-                        { data: 'last_connected_system' },
-                        { data: 'last_connected_user' },
-                        { data: 'last_discovered_at' },
-                        { data: 'channel' },
-                        { data: 'personal_hotspot' },
-                        { data: 'autojoin_disabled' },
-                        { data: 'possibly_hidden_network' },
-                        { data: 'captive' },
-                        { data: 'passpoint' },
-                        { data: 'roaming_profile_type' },
-                        { data: 'add_reason' },
-                        { data: 'temporarily_disabled' },
-                        { data: 'standalone_6g' },
-                        { data: 'bssid_list' }
-                    ],
-                    createdRow: function( nRow, aData, iDataIndex ) {
-                            // Format date
-                            var event = parseInt($('td:eq(4)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(4)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(4)', nRow).text("");
-                            }
+        const skipThese = new Set(['id', 'serial_number', 'known_networks']);
+        const rows = [];
+        const hasWiFi = $machineHostname.text().includes("Wi-Fi");
+        const hostnameRows = [];
 
-                            var event = parseInt($('td:eq(5)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(5)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(5)', nRow).text("");
-                            }
+        $.each(data, function(i, d){
+            for (const [prop, value] of Object.entries(d)) {
+                if (skipThese.has(prop) || ((value === '' || value === null || value === "{}") && value !== "0")) continue;
 
-                            var event = parseInt($('td:eq(6)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(6)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(6)', nRow).text("");
-                            }
+                let row;
+                switch(prop) {
+                    case 'snr':
+                        const snrValue = value !== null ? value : d.agrctlrssi - d.agrctlnoise;
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${t('wifi.snr_detail')}">${snrValue} db</span></td></tr>`;
+                        break;
+                    case 'lasttxrate':
+                    case 'maxrate':
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${value * 0.125} MB/sec">${value} Mbps</span></td></tr>`;
+                        break;
+                    case 'agrctlrssi':
+                    case 'agrctlnoise':
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${t('wifi.' + prop + '_detail')}">${value} db</span></td></tr>`;
+                        break;
+                    case 'state':
+                    case 'link_auth':
+                        if (prop === 'state' || value.includes("-")) {
+                            row = `<tr><th>${t('wifi.' + prop)}</th><td>${t('wifi.' + value)}</td></tr>`;
+                        }
+                        break;
+                    case 'x802_11_auth':
+                        if (value === 'open') {
+                            row = `<tr><th>${t('wifi.' + prop)}</th><td>${t('wifi.open')}</td></tr>`;
+                        }
+                        break;
+                    case 'op_mode':
+                        if (value.includes("station")) {
+                            row = `<tr><th>${t('wifi.' + prop)}</th><td>${t('wifi.station')}</td></tr>`;
+                        }
+                        break;
+                    case 'ssid':
+                    case 'bssid':
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td>${value}</td></tr>`;
+                        if (hasWiFi) {
+                            hostnameRows.push(`<tr><th>Wi-Fi ${t('wifi.' + prop)}</th><td>${prop === 'bssid' ? value.toUpperCase() : value}</td></tr>`);
+                        }
+                        break;
+                    default:
+                        row = `<tr><th style="width: 200px;">${t('wifi.' + prop)}</th><td style="max-width: 500px;">${value}</td></tr>`;
+                }
+                if (row) rows.push(row);
+            }
+        });
 
-                            var colvar=$('td:eq(8)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(8)', nRow).text(colvar)
+        // Append all rows at once
+        $wifiTab.append(
+            $('<div>').append(
+                tableTemplate.clone().append($('<tbody>').html(rows.join('')))
+            )
+        );
 
-                            var colvar=$('td:eq(9)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(9)', nRow).text(colvar)
+        if (hostnameRows.length) {
+            $machineHostname.append(hostnameRows.join(''));
+        }
 
-                            var colvar=$('td:eq(10)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(10)', nRow).text(colvar)
+        // Process known networks
+        const knownNetworks = data[0].known_networks;
+        if (knownNetworks && (knownNetworks.includes(', "last_connected_user": "') || 
+            knownNetworks.includes(', "private_mac_address": "'))) {
+            
+            $wifiTab.append(knownNetworksTemplate);
+            
+            const dateFormatter = date => `<span title="${moment(date).fromNow()}">${moment(date).format('llll')}</span>`;
+            const boolFormatter = val => val == '1' ? t('yes') : (val === '0' ? t('no') : '');
 
-                            var colvar=$('td:eq(11)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(11)', nRow).text(colvar)
+            $('#wifi_known_networks-table').DataTable({
+                data: JSON.parse(knownNetworks),
+                order: [[0, 'asc']],
+                autoWidth: false,
+                columns: ['ssid', 'security_type', 'private_mac_address', 'private_mac_mode_user',
+                         'last_connected_system', 'last_connected_user', 'last_discovered_at', 'channel',
+                         'personal_hotspot', 'autojoin_disabled', 'possibly_hidden_network', 'captive',
+                         'passpoint', 'roaming_profile_type', 'add_reason', 'temporarily_disabled',
+                         'standalone_6g', 'bssid_list'].map(col => ({data: col})),
+                createdRow: function(nRow, aData, iDataIndex) {
+                    // Format dates
+                    [4, 5, 6].forEach(index => {
+                        const $cell = $('td:eq(' + index + ')', nRow);
+                        const timestamp = parseInt($cell.html());
+                        $cell.html(!isNaN(timestamp) ? dateFormatter(new Date(timestamp * 1000)) : '');
+                    });
 
-                            var colvar=$('td:eq(12)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(12)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(15)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(15)', nRow).text(colvar) 
-
-                            var colvar=$('td:eq(16)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(16)', nRow).text(colvar)
-                    }
-                });
-
-        // Only draw the known networks table if there is something in it and contains a new macOS 11+ key
-        } else if (data[0]["known_networks"] && data[0]["known_networks"].includes(', "last_connected_user": "')){
-            $('#wifi-tab')
-                .append('<div id="wifi_known_networks-table-view" class="row" style="padding-left: 15px; padding-right: 15px;"><h4>'+i18n.t('wifi.known_networks')+'</h4><table class="table table-striped table-condensed table-bordered" id="wifi_known_networks-table"><thead><tr><th data-colname="wifi.ssid">'+i18n.t('wifi.ssid')+'</th><th data-colname="wifi.security_type">'+i18n.t('wifi.security_type')+'</th><th data-colname="wifi.last_connected_system">'+i18n.t('wifi.last_connected_system')+'</th><th data-colname="wifi.last_connected_user">'+i18n.t('wifi.last_connected_user')+'</th><th data-colname="wifi.last_discovered_at">'+i18n.t('wifi.last_discovered_at')+'</th><th data-colname="wifi.channel">'+i18n.t('wifi.channel')+'</th><th data-colname="wifi.personal_hotspot">'+i18n.t('wifi.personal_hotspot')+'</th><th data-colname="wifi.autojoin_disabled">'+i18n.t('wifi.autojoin_disabled')+'</th><th data-colname="wifi.possibly_hidden_network">'+i18n.t('wifi.possibly_hidden_network')+'</th><th data-colname="wifi.captive">'+i18n.t('wifi.captive')+'</th><th data-colname="wifi.passpoint">'+i18n.t('wifi.passpoint')+'</th><th data-colname="wifi.roaming_profile_type">'+i18n.t('wifi.roaming_profile_type')+'</th><th data-colname="wifi.add_reason">'+i18n.t('wifi.add_reason')+'</th><th data-colname="wifi.temporarily_disabled">'+i18n.t('wifi.temporarily_disabled')+'</th><th data-colname="wifi.standalone_6g">'+i18n.t('wifi.standalone_6g')+'</th><th data-colname="wifi.bssid_list">'+i18n.t('wifi.bssid_list')+'</th></tr></thead><tbody><tr><td data-i18n="listing.loading" colspan="16" class="dataTables_empty"></td></tr></tbody></table></div>')
-
-                // Parse the JSON string into vaiable
-                var table_data = JSON.parse(data[0]["known_networks"]);
-                var known_networks = true;
-                $('#wifi_known_networks-table').DataTable({
-
-                    data: table_data,
-                    order: [[0,'asc']],
-                    autoWidth: false,
-                    columns: [
-                        { data: 'ssid' },
-                        { data: 'security_type' },
-                        { data: 'last_connected_system' },
-                        { data: 'last_connected_user' },
-                        { data: 'last_discovered_at' },
-                        { data: 'channel' },
-                        { data: 'personal_hotspot' },
-                        { data: 'autojoin_disabled' },
-                        { data: 'possibly_hidden_network' },
-                        { data: 'captive' },
-                        { data: 'passpoint' },
-                        { data: 'roaming_profile_type' },
-                        { data: 'add_reason' },
-                        { data: 'temporarily_disabled' },
-                        { data: 'standalone_6g' },
-                        { data: 'bssid_list' }
-                    ],
-                    createdRow: function( nRow, aData, iDataIndex ) {
-                            // Format date
-                            var event = parseInt($('td:eq(2)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(2)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(2)', nRow).text("");
-                            }
-
-                            var event = parseInt($('td:eq(3)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(3)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(3)', nRow).text("");
-                            }
-
-                            var event = parseInt($('td:eq(4)', nRow).html());
-                            if ( !isNaN(event) ){
-                                var date = new Date(event * 1000);
-                                $('td:eq(4)', nRow).html('<span title="' + moment(date).fromNow() + '">'+moment(date).format('llll')+'</span>');
-                            } else {
-                                $('td:eq(4)', nRow).text("");
-                            }
-
-                            var colvar=$('td:eq(6)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(6)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(7)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(7)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(8)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(8)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(9)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(9)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(10)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(10)', nRow).text(colvar)
-
-                            var colvar=$('td:eq(13)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(13)', nRow).text(colvar) 
-
-                            var colvar=$('td:eq(14)', nRow).html();
-                            colvar = colvar == '1' ? i18n.t('yes') :
-                            (colvar === '0' ? i18n.t('no') : '')
-                            $('td:eq(14)', nRow).text(colvar)
-                    }
-                });
+                    // Format booleans
+                    [8, 9, 10, 11, 12, 15, 16].forEach(index => {
+                        const $cell = $('td:eq(' + index + ')', nRow);
+                        $cell.text(boolFormatter($cell.html()));
+                    });
+                }
+            });
         }
     });
 });
