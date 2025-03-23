@@ -1,6 +1,7 @@
 {
     "op_mode": "Access Point Mode",
     "bssid": "BSSID",
+    "bssid_alias": "Access Point",
     "channel": "Channel",
     "extrssi": "External RSSI",
     "lasttxrate": "Last Transmit Rate",
@@ -65,7 +66,7 @@
     "user_role": "User Role",
     "preferred_order": "Preferred Order",
     "snr_detail": "Signal to Noise Ratio - 0db to 120db - higher is better",
-    "noise_detail": "0db to -120db - closer to 0 is better",
+    "noise_detail": "0db to -120db - closer to -120 is better",
     "rssi_detail": "Received Signal Strength Indicator - 0db to -120db - closer to 0 is better",
     "report": "WiFi Report",
     "last_connected_system": "Last Joined by System",
@@ -78,5 +79,16 @@
     "private_mac_updated_at": "Private MAC Updated",
     "private_mac_mode_user": "Private MAC User Setting",
     "private_mac_mode_user_updated": "Private MAC User Setting Updated",
-    "private_mac_eval_at": "Private MAC Evaluated"
+    "private_mac_eval_at": "Private MAC Evaluated",
+    "ap_aliases": "Access Points",
+    "no_ap_aliases": "No Access Points",
+    "snr_widget": {
+        "title": "WiFi Signal Quality",
+        "tooltip": "Distribution of WiFi signal quality based on SNR",
+        "poor": "Poor",
+        "fair": "Fair",
+        "good": "Good",
+        "excellent": "Excellent",
+        "no_wifi": "No WiFi"
+    }
 }

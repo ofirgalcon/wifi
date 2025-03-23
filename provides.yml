@@ -18,3 +18,17 @@ widgets:
         view: wifi_security_widget
     wifi_state:
         view: wifi_state_widget
+    wifi_snr:
+        view: wifi_snr_widget
+    wifi_bssid_aliases:
+        view: wifi_bssid_aliases_widget
+
+# Module unique name
+slug: wifi
+
+# Admin (1) or user (0) module
+admin: 0
+
+# Modules that this module is dependent on
+dependencies:
+    - reportdata

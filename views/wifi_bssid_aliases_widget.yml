@@ -1,0 +1,9 @@
+type: scrollbox
+widget_id: wifi-bssid-aliases-widget
+api_url: /module/wifi/get_apaliases_widget
+i18n_title: wifi.ap_aliases
+icon: fa-map-marker
+listing_link: /show/listing/wifi/wifi
+search_key: bssid_alias
+badge: count
+i18n_empty_result: wifi.no_ap_aliases 

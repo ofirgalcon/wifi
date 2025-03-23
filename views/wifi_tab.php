@@ -1,4 +1,3 @@
-
 <div id="lister" style="font-size: large; float: right;">
     <a href="/show/listing/wifi/wifi" title="List">
         <i class="btn btn-default tab-btn fa fa-list"></i>
@@ -9,7 +8,7 @@
         <i class="btn btn-default tab-btn fa fa-th"></i>
     </a>
 </div>
-<h2 data-i18n="wifi.wifiinfo"></h2>
+<h2><i class="fa fa-wifi"></i> <span data-i18n="wifi.wifiinfo"></span></h2>
 <div id="wifi-tab"></div>
 
 <div id="wifi-msg" data-i18n="listing.loading" class="col-lg-12 text-center"></div>
@@ -48,12 +47,41 @@ $(document).on('appReady', function(){
             </table>
         </div>`;
 
-    $.getJSON(appUrl + '/module/wifi/get_tab_data/' + serialNumber, function(data){
-        if (!data) {
-            $wifiMsg.text(t('no_data'));
-            return;
-        }
-
+    // Get BSSID aliases from API and then load WiFi data
+    let allBSSIDAndAliases = {};
+    
+    // Just load WiFi data directly, no need to fetch aliases separately
+    loadWifiData();
+    
+    // Function to load and process WiFi data
+    function loadWifiData() {
+        const url = appUrl + '/module/wifi/get_tab_data/' + serialNumber;
+        
+        $.ajax({
+            url: url,
+            dataType: 'json',
+            timeout: 10000,
+            success: function(data) {
+                // Extract data from msg wrapper if present
+                if (data && data.msg) {
+                    data = data.msg;
+                }
+                
+                if (!data || !data.length) {
+                    $wifiMsg.text(t('no_data'));
+                    return;
+                }
+                
+                processWifiData(data);
+            },
+            error: function(xhr, status, error) {
+                $wifiMsg.text(t('error_loading'));
+            }
+        });
+    }
+    
+    // Function to process WiFi data
+    function processWifiData(data) {
         const state = data[0].state;
         if (state === 'no wifi') {
             $wifiMsg.text(t('wifi.no_wifi_client_tab'));
@@ -67,23 +95,86 @@ $(document).on('appReady', function(){
 
         // Process main wifi data
         $wifiMsg.empty();
-        $wifiCnt.text(t('on'));
+        
+        // Update wifiCnt to show SNR if available
+        if (data[0].snr !== null || (data[0].agrctlrssi !== null && data[0].agrctlnoise !== null)) {
+            const snrValue = data[0].snr !== null ? data[0].snr : (data[0].agrctlrssi - data[0].agrctlnoise);
+            let snrClass = '';
+            if (snrValue < 20) {
+                snrClass = 'danger';
+            } else if (snrValue < 25) {
+                snrClass = 'warning';
+            } else if (snrValue < 30) {
+                snrClass = 'info';
+            } else {
+                snrClass = 'success';
+            }
+            $wifiCnt.html(`<span class="label label-${snrClass}">${snrValue} db</span>`);
+        } else {
+            $wifiCnt.text(t('on'));
+        }
 
         const skipThese = new Set(['id', 'serial_number', 'known_networks']);
         const rows = [];
         const hasWiFi = $machineHostname.text().includes("Wi-Fi");
         const hostnameRows = [];
-
+        
+        // First handle SSID, BSSID alias, and BSSID in the correct order
+        $.each(data, function(i, d) {
+            // SSID should be first
+            const ssid = d.ssid || '';
+            if (ssid) {
+                rows.push(`<tr><th>${t('wifi.ssid')}</th><td>${ssid}</td></tr>`);
+                if (hasWiFi) {
+                    hostnameRows.push(`<tr><th>Wi-Fi ${t('wifi.ssid')}</th><td>${ssid}</td></tr>`);
+                }
+            }
+            
+            // Then BSSID alias if it exists
+            const bssidAlias = d.bssid_alias || '';
+            if (bssidAlias) {
+                rows.push(`<tr><th>${t('wifi.bssid_alias')}</th><td>${bssidAlias}</td></tr>`);
+                if (hasWiFi) {
+                    hostnameRows.push(`<tr><th>Wi-Fi ${t('wifi.bssid_alias')}</th><td>${bssidAlias}</td></tr>`);
+                }
+            }
+            
+            // Then BSSID
+            const bssid = d.bssid ? d.bssid.toUpperCase() : '';
+            if (bssid) {
+                rows.push(`<tr><th>${t('wifi.bssid')}</th><td>${bssid}</td></tr>`);
+                if (hasWiFi) {
+                    hostnameRows.push(`<tr><th>Wi-Fi ${t('wifi.bssid')}</th><td>${bssid}</td></tr>`);
+                }
+            }
+        });
+        
+        // Then process the rest of the properties
         $.each(data, function(i, d){
             for (const [prop, value] of Object.entries(d)) {
-                if (skipThese.has(prop) || ((value === '' || value === null || value === "{}") && value !== "0")) continue;
+                // Skip already processed properties
+                if (skipThese.has(prop) || prop === 'bssid' || prop === 'bssid_alias' || prop === 'ssid' || 
+                   ((value === '' || value === null || value === "{}") && value !== "0")) {
+                    continue;
+                }
 
                 let row;
                 switch(prop) {
-                    case 'snr':
+                    case 'snr': {
                         const snrValue = value !== null ? value : d.agrctlrssi - d.agrctlnoise;
-                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${t('wifi.snr_detail')}">${snrValue} db</span></td></tr>`;
+                        let labelClass = '';
+                        if (snrValue < 20) {
+                            labelClass = 'danger';
+                        } else if (snrValue < 25) {
+                            labelClass = 'warning';
+                        } else if (snrValue < 30) {
+                            labelClass = 'info';
+                        } else {
+                            labelClass = 'success';
+                        }
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span class="label label-${labelClass}" title="${t('wifi.snr_detail')}">${snrValue} db</span></td></tr>`;
                         break;
+                    }
                     case 'lasttxrate':
                     case 'maxrate':
                         row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${value * 0.125} MB/sec">${value} Mbps</span></td></tr>`;
@@ -92,9 +183,20 @@ $(document).on('appReady', function(){
                     case 'agrctlnoise':
                         row = `<tr><th>${t('wifi.' + prop)}</th><td><span title="${t('wifi.' + prop + '_detail')}">${value} db</span></td></tr>`;
                         break;
-                    case 'state':
+                    case 'state': {
+                        let labelClass = '';
+                        if (value === 'running') {
+                            labelClass = 'success';
+                        } else if (value === 'off' || value === 'no wifi') {
+                            labelClass = 'warning';
+                        } else {
+                            labelClass = 'warning';
+                        }
+                        row = `<tr><th>${t('wifi.' + prop)}</th><td><span class="label label-${labelClass}">${t('wifi.' + value)}</span></td></tr>`;
+                        break;
+                    }
                     case 'link_auth':
-                        if (prop === 'state' || value.includes("-")) {
+                        if (value.includes("-")) {
                             row = `<tr><th>${t('wifi.' + prop)}</th><td>${t('wifi.' + value)}</td></tr>`;
                         }
                         break;
@@ -106,13 +208,6 @@ $(document).on('appReady', function(){
                     case 'op_mode':
                         if (value.includes("station")) {
                             row = `<tr><th>${t('wifi.' + prop)}</th><td>${t('wifi.station')}</td></tr>`;
-                        }
-                        break;
-                    case 'ssid':
-                    case 'bssid':
-                        row = `<tr><th>${t('wifi.' + prop)}</th><td>${value}</td></tr>`;
-                        if (hasWiFi) {
-                            hostnameRows.push(`<tr><th>Wi-Fi ${t('wifi.' + prop)}</th><td>${prop === 'bssid' ? value.toUpperCase() : value}</td></tr>`);
                         }
                         break;
                     default:
@@ -168,6 +263,6 @@ $(document).on('appReady', function(){
                 }
             });
         }
-    });
+    }
 });
 </script>
